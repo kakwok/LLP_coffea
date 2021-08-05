@@ -7,11 +7,11 @@ import numpy as np
 from coffea import hist, lookup_tools
 from coffea.util import load, save
 from coffea.hist import plot
-
+import warnings
 
 corrections = {}
 
-with uproot.open("data/pileUp_Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.root") as fin_pileup:
+with uproot.open("metadata/pileUp_Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.root") as fin_pileup:
     norm = lambda x: x / x.sum()
     #print(fin_pileup["pileup"].values)
     #print(fin_pileup["pileup"].values.sum())
@@ -57,14 +57,37 @@ corrections['2018_pileupweight'] = pileup_corr
 corrections['2018_pileupweight_puUp'] = pileup_corr_puUp
 corrections['2018_pileupweight_puDown'] = pileup_corr_puDown
 
-with uproot.open("./WPT.root") as f:
+with uproot.open("./metadata/WPT.root") as f:
     wpt_LO = f['Wpt']
-with uproot.open("./dyturbo_cms/wp-13tev-cms.root") as f:
+with uproot.open("./metadata/wp-13tev-cms.root") as f:
     wpt_NLO = f['s_qt']
 
 wpt_NLO_normalized = wpt_NLO.values/wpt_NLO.values.sum()
 
 ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
 corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized[ptrange] /wpt_LO.values[ptrange] , wpt_LO.edges[ptrange])
+
+def read_xsections(filename):
+    out = {}
+    with open(filename) as fin:
+        for line in fin:
+            line = line.strip()
+            if len(line) == 0 or line[0] == '#':
+                continue
+            dataset, xsexpr, *_ = line.split()
+            try:
+                xs = float(numexpr.evaluate(xsexpr))
+            except:
+                print("numexpr evaluation failed for line: %s" % line)
+                raise
+            if xs <= 0:
+                warnings.warn("Cross section is <= 0 in line: %s" % line, RuntimeWarning)
+            out[dataset] = xs
+    return out
+
+# curl -O https://raw.githubusercontent.com/kakwok/ZPrimePlusJet/newTF/analysis/ggH/xSections.dat
+corrections['xsections'] = read_xsections("metadata/xSections.dat")
+
+
 
 save(corrections, 'corrections.coffea')

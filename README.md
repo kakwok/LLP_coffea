@@ -3,7 +3,7 @@ coffea analysis of LLP
 
 ## Getting coffea
 
-For lpc condor, follow instructions at [lpcjobqueue!!](https://github.com/CoffeaTeam/lpcjobqueue)
+For lpc condor, follow instructions at [lpcjobqueue](https://github.com/CoffeaTeam/lpcjobqueue)
 
 ```
 voms-proxy-init

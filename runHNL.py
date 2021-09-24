@@ -6,14 +6,13 @@ import coffea
 import pickle,glob
 import time
 
-def runLocal(outf="test.pickle"):
+def runLocal(outf="test.pickle",fileset="test.json"):
     from HNLprocessor.HNLproc_3 import MyProcessor
-    #from HNLproc_3 import MyProcessor
     out = processor.run_uproot_job(
         #"samplefiles.json",
         #"all_samples.json",
-        "signals_skim.json",
-        #fileset,
+        #"signals_skim.json",
+        fileset,
         treename="MuonSystem",
         processor_instance=MyProcessor(),
         executor=processor.iterative_executor,
@@ -27,7 +26,7 @@ def runLocal(outf="test.pickle"):
         pickle.dump(out,f)
     return
 
-def runLPC(outf="test.pickle"):
+def runLPC(outf="test.pickle",fileset="test.json"):
     import time
     from distributed import Client
     from lpcjobqueue import LPCCondorCluster
@@ -52,9 +51,7 @@ def runLPC(outf="test.pickle"):
     print("Waiting for at least one worker...")
     client.wait_for_workers(4)
     hists, metrics = processor.run_uproot_job(
-        #"samplefiles.json",
-        "signals_skim.json",
-        #"all_samples.json",
+        fileset,
         treename="MuonSystem",
         processor_instance=MyProcessor(),
         executor=processor.dask_executor,
@@ -78,9 +75,11 @@ if __name__ == '__main__':
 
     #outf = "HNL_histograms_signals_Jul28.pickle"
     #outf = "HNL_histograms_signals_Aug5.pickle"
-    outf = "HNL_histograms_all_Sep3.pickle"
+    outf = "HNL_histograms_all_Sep17.pickle"
+    fileset = "signals_skim.json"
+    #fileset = "test.json"
 
-    #runLPC(outf)
-    runLocal(outf)
-    #runLocal("test.pickle")
+    runLPC(outf,fileset)
+    #runLocal(outf,fileset)
+    #runLocal("test.pickle","test.json")
 

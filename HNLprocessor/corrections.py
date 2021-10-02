@@ -39,5 +39,24 @@ def add_Wpt_kfactor(weights, gWPt, dataset):
     else:
         return
 
+def add_ctau_weight(weights,llp_ctau, ctau_old, ctau_new):
+    #print("Adding ctau weight")
+    weights.add("ctau",ak.firsts(np.exp(llp_ctau * (1/ctau_old-1/ctau_new))*(ctau_old/ctau_new)))
+    return
+
 def load_xsection():
     return compiled['xsections']
+
+
+def reweightXsec(ctau,mass):
+    #ctau in mm
+    #mass in GeV
+    #xsec in pb
+    cof={
+        "1":9.51561675,
+        "2":6.04926165,
+        "4":2.55645182,
+        "7":-0.29378948,
+        "10":-2.11196473,
+    }
+    return np.exp(-1*np.log(ctau)+cof[mass])

@@ -61,6 +61,6 @@ To run with lpc condor, first follow instructions at [lpcjobqueue!!](https://git
 voms-proxy-init
 ./shell                          ## enter virtual environment
 [python makezip.py]              ## if you have updated anything in the `HNLprocessor` package
-Singularity> python runHNL.py --condoq   ## switch to runLPC in the script 
+Singularity> python runHNL.py --condor   ## switch to runLPC in the script 
 ```
 Processing all samples takes about ~10 mins.

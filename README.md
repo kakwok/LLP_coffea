@@ -21,7 +21,7 @@ You can launch Jupyter notebook server on LPC node and forward the port to your 
 To do so, you need to connect to LPC with 
 ```
 ssh -Y -L localhost:8887:localhost:8887 USERNAME@cmslpc-sl7.fnal.gov
-``
+```
 After enabling coffea env, you can start the server with
 ```
 jupyter notebook --no-browser --port=8887 --ip 127.0.0.1
@@ -61,6 +61,6 @@ To run with lpc condor, first follow instructions at [lpcjobqueue!!](https://git
 voms-proxy-init
 ./shell                          ## enter virtual environment
 [python makezip.py]              ## if you have updated anything in the `HNLprocessor` package
-Singularity> python runHNL.py    ## switch to runLPC in the script 
+Singularity> python runHNL.py --condoq   ## switch to runLPC in the script 
 ```
 Processing all samples takes about ~10 mins.

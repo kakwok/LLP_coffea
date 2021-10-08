@@ -67,7 +67,7 @@ signals_muon = {
 
 }
 data_muon = {
-     'Muon_2018D': glob.glob("/eos/uscms/store/user/lpclonglived/skim/HNL/Muon_2018D/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2018D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim/SingleMuon_2018D/HeavyNeutralLepton_Tree_*.root"),
 
 }
 

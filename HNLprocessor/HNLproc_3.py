@@ -178,8 +178,9 @@ class MyProcessor(processor.ProcessorABC):
             
         ele   = lep[abs(lep.pdgid)==11]
         muons = lep[abs(lep.pdgid)==13]
-        good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.4) & (ele.passId)]
-        good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)]       
+
+
+
 
         cluster_dir= ak.zip(
         {
@@ -190,10 +191,27 @@ class MyProcessor(processor.ProcessorABC):
             },with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior
         )
-        #compute dphi with selected electron with highest pT
+      
+        good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.4) & (ele.passId)]
+        ele_cls_pair = ak.cartesian({'ele':good_ele,"cls":cluster_dir},axis=1,nested=True)
+        #compute dR between for each pairs
+        dR_ele_cls = ele_cls_pair.cls.delta_r(ele_cls_pair.ele)
+        #Require electron to have dR>0.4 for ALL of the clusters in the event
+        good_ele = good_ele[ak.all(dR_ele_cls>0.4,axis=2)]
         dphi_cluster_ele = ak.fill_none(cluster_dir.delta_phi(ak.firsts(good_ele)),-999)
+        dr_cluster_ele =  ak.fill_none(cluster_dir.delta_r(ak.firsts(good_ele)),-999)
+
+
+        good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)]
+        mu_cls_pair = ak.cartesian({'mu':good_mu,"cls":cluster_dir},axis=1,nested=True)
+        #compute dR between for each pairs
+        dR_mu_cls = mu_cls_pair.cls.delta_r(mu_cls_pair.mu)
+        #Require muon to have dR>0.4 for ALL of the clusters in the event
+        good_mu = good_mu[ak.all(dR_mu_cls>0.4,axis=2)]
         dphi_cluster_mu = ak.fill_none(cluster_dir.delta_phi(ak.firsts(good_mu)),-999)
-       
+        dr_cluster_mu = ak.fill_none(cluster_dir.delta_r(ak.firsts(good_mu)),-999)
+
+
         cluster= ak.zip(
             {                
                 "time":events.cscRechitCluster3TimeTotal,
@@ -220,6 +238,8 @@ class MyProcessor(processor.ProcessorABC):
                 "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_ele":dphi_cluster_ele,                
                 "dphi_cluster_mu" :dphi_cluster_mu,
+                "dr_cluster_ele":dr_cluster_ele, 
+                "dr_cluster_mu":dr_cluster_mu,
             }
         )
         ## All possible pairs 
@@ -263,7 +283,7 @@ class MyProcessor(processor.ProcessorABC):
         dphi_MET      = (cluster.dphi_cluster_MET<0.75)        
         dphi_ele      = (cluster.dphi_cluster_ele>2.5)        
         dphi_mu       = (cluster.dphi_cluster_mu>2.5)
-	
+        dr_mu         = (cluster.dr_cluster_mu>0.4)
 
         selection = PackedSelection(np.uint64)        
         
@@ -327,24 +347,6 @@ class MyProcessor(processor.ProcessorABC):
             allcuts = (allcuts) & (s["cut"])
             selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
 	"""
-        cutflow1_mu = [
-            {"name":"JetVeto"    ,  "cut":jetVeto_mask},
-            {"name":"MuVeto"     ,  "cut":muonVeto_mask},
-            {"name":"ME11_12"    ,  "cut":ME11_12_veto},
-            {"name":"MB1seg"     ,  "cut":MB1seg_veto},
-            {"name":"RB1"        ,  "cut":RB1_veto},
-            {"name":"Time"       ,  "cut":IntimeCut},
-            {"name":"TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"ClusID"     ,  "cut":ClusterID},
-            {"name":"cf2_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf2_dphi_lep"   ,  "cut":dphi_mu},
-        ]
-        allcuts = (jetVeto_mask)
-        for i,s in enumerate(cutflow1_mu):
-            allcuts = (allcuts) & (s["cut"])
-            selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
-            selection.add(s["name"]+"_nminus1",ak.num(cluster[s['cut']],axis=1)>0)
-
 
 
         cutflow3_mu = [
@@ -355,9 +357,9 @@ class MyProcessor(processor.ProcessorABC):
             {"name":"cf3_RB1"        ,  "cut":RB1_veto},
             {"name":"cf3_Time"       ,  "cut":IntimeCut},
             {"name":"cf3_TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"cf3_ClusID"     ,  "cut":ClusterID},
-            {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf3_dphi_lep_ele",  "cut":dphi_mu},
+            {"name":"cf3_ClusID"     ,  "cut":ClusterID}, 
+	    {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
+            {"name":"cf3_dphi_lep_ele",  "cut":dphi_mu},	 
         ]
         allcuts = (ME11_12_veto)
         for i,s in enumerate(cutflow3_mu):
@@ -395,13 +397,17 @@ class MyProcessor(processor.ProcessorABC):
             ((jetVeto_mask) &(muonVeto_mask))
             & (ME11_12_veto)
             & ((MB1seg_veto) & (RB1_veto))
-        ]        
+        ]   
+        cls_drMUVeto = cluster[
+        (dr_mu)
+        ]     
 
         selection.add('cls_OOT',ak.num(cls_OOT,axis=1)>0)
         selection.add('cls_StatVeto',ak.num(cls_StaVeto,axis=1)>0)
         selection.add('cls_JetMuVeto',ak.num(cls_JetMuVeto,axis=1)>0)
         selection.add('cls_JetMuStaVeto',ak.num(cls_JetMuStaVeto,axis=1)>0)
         selection.add('cls_ABCD',ak.num(cls_ABCD,axis=1)>0)
+        selection.add('cls_drMUVeto',ak.num(cls_drMUVeto,axis=1)>0)
 
         preselections_ele = ['trigger_ele','MET',"METfilters",'good_electron']       
         preselections_mu = ['trigger_mu','MET',"METfilters",'good_mu']
@@ -492,9 +498,8 @@ class MyProcessor(processor.ProcessorABC):
             #"ele_signal_ABCD_cf2":["Acceptance",'trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2_ele],            
             #"ele_ABCD_cf2"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2_ele],            
             #"ele_ABCD_cf3"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3_ele],            
-            "mu_ABCD"            :['trigger_mu','good_mu','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3_mu],
-            
-	}
+            "mu_ABCD"            :['trigger_mu','good_mu','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3_mu], 
+        }
         for region,cuts in cf_regions.items():
             ## Fill cut flow plots 
             allcuts = set([])

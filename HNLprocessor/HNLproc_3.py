@@ -144,6 +144,8 @@ class MyProcessor(processor.ProcessorABC):
                 
         isSignal= ak.any(events.gLLP_csc)        
         isData = not(ak.any(events.gLLP_e) or ak.any(events.gLepE))
+        isElectronChannel = False
+        isMuonChannel = not(isElectronChannel)
         output["sumw"][dataset] += len(events)
         if isSignal:        
             csc = ak.any(events.gLLP_csc,axis=1)
@@ -256,7 +258,8 @@ class MyProcessor(processor.ProcessorABC):
             'LooseIso':events.cscRechitCluster3MuonVetoLooseIso,
             'LooseId':events.cscRechitCluster3MuonVetoLooseId,    
             'TightId':events.cscRechitCluster3MuonVetoTightId,
-        })      
+        })
+
 
         jetVeto=ak.zip({
             'e':events.cscRechitCluster3JetVetoE,
@@ -271,6 +274,7 @@ class MyProcessor(processor.ProcessorABC):
         ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==2) & (abs(cluster.eta)<1.6))
         
         muonVeto_mask = ~((muVeto.pt>20) & abs(muVeto.eta<2.4))
+       
         jetVeto_mask  = ~((jetVeto.pt>10)& abs(jetVeto.eta<2.4))
         RE12_veto    = (cluster.RE12==0)
         MB1seg_veto  = (cluster.MB1seg==0)
@@ -295,77 +299,78 @@ class MyProcessor(processor.ProcessorABC):
         selection.add('good_mu', ak.num(good_mu,axis=1)>0)
         selection.add('MET',events.metXYCorr>30)
         selection.add('W_CR', (events.MT>70) & (events.MT<90) &(events.metXYCorr>60))
-       	"""
-        cutflow1_ele = [
-            {"name":"JetVeto"    ,  "cut":jetVeto_mask},
-            {"name":"MuVeto"     ,  "cut":muonVeto_mask},
-            {"name":"ME11_12"    ,  "cut":ME11_12_veto},
-            {"name":"MB1seg"     ,  "cut":MB1seg_veto},
-            {"name":"RB1"        ,  "cut":RB1_veto},
-            {"name":"Time"       ,  "cut":IntimeCut},
-            {"name":"TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"ClusID"     ,  "cut":ClusterID},
-            {"name":"cf2_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf2_dphi_lep"   ,  "cut":dphi_ele},
-        ]
-        allcuts = (jetVeto_mask)
-        for i,s in enumerate(cutflow1_ele):
-            allcuts = (allcuts) & (s["cut"])
-            selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
-            selection.add(s["name"]+"_nminus1",ak.num(cluster[s['cut']],axis=1)>0)
+       
+        if isMuonChannel:
+            cutflow3_mu = [
+                {"name":"cf3_ME11_12"    ,  "cut":ME11_12_veto},
+                {"name":"cf3_MuVeto"     ,  "cut":muonVeto_mask},
+                {"name":"cf3_JetVeto"    ,  "cut":jetVeto_mask},
+                {"name":"cf3_MB1seg"     ,  "cut":MB1seg_veto},
+                {"name":"cf3_RB1"        ,  "cut":RB1_veto},
+                {"name":"cf3_Time"       ,  "cut":IntimeCut},
+                {"name":"cf3_TimeSpread" ,  "cut":timeSpreadCut},
+                {"name":"cf3_ClusID"     ,  "cut":ClusterID},
+                {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
+                {"name":"cf3_dphi_lep_ele",  "cut":dphi_mu},
+            ]
+            allcuts = (ME11_12_veto)
+            for i,s in enumerate(cutflow3_mu):
+                allcuts = (allcuts) & (s["cut"])
+                selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
+                selection.add(s["name"]+"_nminus1",ak.num(cluster[s['cut']],axis=1)>0)
 
-        cutflow2_ele = [
-            {"name":"cf2_ME11_12"    ,  "cut":ME11_12_veto},
-            {"name":"cf2_JetVeto"    ,  "cut":jetVeto_mask},
-            {"name":"cf2_MuVeto"     ,  "cut":muonVeto_mask},
-            {"name":"cf2_MB1seg"     ,  "cut":MB1seg_veto},
-            {"name":"cf2_RB1"        ,  "cut":RB1_veto},
-            {"name":"cf2_Time"       ,  "cut":IntimeCut},
-            {"name":"cf2_TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"cf2_ClusID"     ,  "cut":ClusterID},
-            {"name":"cf2_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf2_dphi_lep"   ,  "cut":dphi_ele},
-        ]
-        allcuts = (ME11_12_veto)
-        for i,s in enumerate(cutflow2_ele):
-            allcuts = (allcuts) & (s["cut"])
-            selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
-        cutflow3_ele = [
-            {"name":"cf3_ME11_12"    ,  "cut":ME11_12_veto},
-            {"name":"cf3_MuVeto"     ,  "cut":muonVeto_mask},
-            {"name":"cf3_JetVeto"    ,  "cut":jetVeto_mask},
-            {"name":"cf3_MB1seg"     ,  "cut":MB1seg_veto},
-            {"name":"cf3_RB1"        ,  "cut":RB1_veto},
-            {"name":"cf3_Time"       ,  "cut":IntimeCut},
-            {"name":"cf3_TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"cf3_ClusID"     ,  "cut":ClusterID},
-            {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf3_dphi_lep_ele",  "cut":dphi_ele},
-        ]
-        allcuts = (ME11_12_veto)
-        for i,s in enumerate(cutflow3_ele):
-            allcuts = (allcuts) & (s["cut"])
-            selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
-	"""
+        elif isElectronChannel:
+            cutflow1_ele = [
+                {"name":"JetVeto"    ,  "cut":jetVeto_mask},
+                {"name":"MuVeto"     ,  "cut":muonVeto_mask},
+                {"name":"ME11_12"    ,  "cut":ME11_12_veto},
+                {"name":"MB1seg"     ,  "cut":MB1seg_veto},
+                {"name":"RB1"        ,  "cut":RB1_veto},
+                {"name":"Time"       ,  "cut":IntimeCut},
+                {"name":"TimeSpread" ,  "cut":timeSpreadCut},
+                {"name":"ClusID"     ,  "cut":ClusterID},
+                {"name":"cf2_dphi_MET"   ,  "cut":dphi_MET},
+                {"name":"cf2_dphi_lep"   ,  "cut":dphi_ele},
+            ]
+            allcuts = (jetVeto_mask)
+            for i,s in enumerate(cutflow1_ele):
+                allcuts = (allcuts) & (s["cut"])
+                selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
+                selection.add(s["name"]+"_nminus1",ak.num(cluster[s['cut']],axis=1)>0)
 
-
-        cutflow3_mu = [
-            {"name":"cf3_ME11_12"    ,  "cut":ME11_12_veto},
-            {"name":"cf3_MuVeto"     ,  "cut":muonVeto_mask},
-            {"name":"cf3_JetVeto"    ,  "cut":jetVeto_mask},
-            {"name":"cf3_MB1seg"     ,  "cut":MB1seg_veto},
-            {"name":"cf3_RB1"        ,  "cut":RB1_veto},
-            {"name":"cf3_Time"       ,  "cut":IntimeCut},
-            {"name":"cf3_TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"cf3_ClusID"     ,  "cut":ClusterID}, 
-	    {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf3_dphi_lep_ele",  "cut":dphi_mu},	 
-        ]
-        allcuts = (ME11_12_veto)
-        for i,s in enumerate(cutflow3_mu):
-            allcuts = (allcuts) & (s["cut"])
-            selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
-
+            cutflow2_ele = [
+                {"name":"cf2_ME11_12"    ,  "cut":ME11_12_veto},
+                {"name":"cf2_JetVeto"    ,  "cut":jetVeto_mask},
+                {"name":"cf2_MuVeto"     ,  "cut":muonVeto_mask},
+                {"name":"cf2_MB1seg"     ,  "cut":MB1seg_veto},
+                {"name":"cf2_RB1"        ,  "cut":RB1_veto},
+                {"name":"cf2_Time"       ,  "cut":IntimeCut},
+                {"name":"cf2_TimeSpread" ,  "cut":timeSpreadCut},
+                {"name":"cf2_ClusID"     ,  "cut":ClusterID},
+                {"name":"cf2_dphi_MET"   ,  "cut":dphi_MET},
+                {"name":"cf2_dphi_lep"   ,  "cut":dphi_ele},
+            ]
+            allcuts = (ME11_12_veto)
+            for i,s in enumerate(cutflow2_ele):
+                allcuts = (allcuts) & (s["cut"])
+                selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
+            
+            cutflow3_ele = [
+                {"name":"cf3_ME11_12"    ,  "cut":ME11_12_veto},
+                {"name":"cf3_MuVeto"     ,  "cut":muonVeto_mask},
+                {"name":"cf3_JetVeto"    ,  "cut":jetVeto_mask},
+                {"name":"cf3_MB1seg"     ,  "cut":MB1seg_veto},
+                {"name":"cf3_RB1"        ,  "cut":RB1_veto},
+                {"name":"cf3_Time"       ,  "cut":IntimeCut},
+                {"name":"cf3_TimeSpread" ,  "cut":timeSpreadCut},
+                {"name":"cf3_ClusID"     ,  "cut":ClusterID},
+                {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
+                {"name":"cf3_dphi_lep_ele",  "cut":dphi_ele},
+            ]
+            allcuts = (ME11_12_veto)
+            for i,s in enumerate(cutflow3_ele):
+                allcuts = (allcuts) & (s["cut"])
+                selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
 
         selection.add('n_cls',ak.num(cluster,axis=1)>0)
         selection.add('nJet',events.nJets>0)
@@ -408,38 +413,38 @@ class MyProcessor(processor.ProcessorABC):
         selection.add('cls_JetMuStaVeto',ak.num(cls_JetMuStaVeto,axis=1)>0)
         selection.add('cls_ABCD',ak.num(cls_ABCD,axis=1)>0)
         selection.add('cls_drMUVeto',ak.num(cls_drMUVeto,axis=1)>0)
-
-        preselections_ele = ['trigger_ele','MET',"METfilters",'good_electron']       
-        preselections_mu = ['trigger_mu','MET',"METfilters",'good_mu']
-        """regions_ele = {
-            "ele_PreSel"       :preselections_ele,            
-            #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
-            
-	    "ele_ABCD"         :preselections_ele+["cls_ABCD"],            
-            "ele_ABCD_OOT"     :preselections_ele+["cls_OOT"],
-            "ele_1cls"         :preselections_ele+["n_cls"],            
-            "ele_JetMuVeto"    :preselections_ele+["cls_JetMuVeto"],
-            "ele_JetMuStaVeto" :preselections_ele+["cls_JetMuStaVeto"],
-            "ele_StatVeto"     :preselections_ele+["cls_StatVeto"],
-            "ele_ABCD_nminus1" :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name']+"_nminus1" for c in cutflow1_ele],             
-            "noselection":[],
-        }"""
-        regions_mu = {
-            "mu_PreSel"       :preselections_mu,
-            #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
-
-            "mu_ABCD"          :preselections_mu+["cls_ABCD"],
-            "mu_ABCD_OOT"      :preselections_mu+["cls_OOT"],
-            "mu_1cls"          :preselections_mu+["n_cls"],
-            "mu_JetMuVeto"     :preselections_mu+["cls_JetMuVeto"],
-            "mu_JetMuStaVeto"  :preselections_mu+["cls_JetMuStaVeto"],
-            "mu_StatVeto"      :preselections_mu+["cls_StatVeto"],
-            "mu_ABCD_nminus1"  :['trigger_mu','good_mu','MET',"METfilters",'n_cls']+[c['name']+"_nminus1" for c in cutflow1_mu],
-
-       }
        
 
+        if isMuonChannel:
+            preselections_mu = ['trigger_mu','MET',"METfilters",'good_mu']
+            regions = {
+                "mu_PreSel"        :preselections_mu,
+                "mu_ABCD"          :preselections_mu+["cls_ABCD"],
+                "mu_ABCD_OOT"      :preselections_mu+["cls_OOT"],
+                "mu_1cls"          :preselections_mu+["n_cls"],
+                "mu_JetMuVeto"     :preselections_mu+["cls_JetMuVeto"],
+                "mu_JetMuStaVeto"  :preselections_mu+["cls_JetMuStaVeto"],
+                "mu_StatVeto"      :preselections_mu+["cls_StatVeto"],
+                "mu_ABCD_nminus1"  :['trigger_mu','good_mu','MET',"METfilters",'n_cls']+[c['name']+"_nminus1" for c in cutflow3_mu],
 
+       } 
+
+        elif isElectronChannel:
+            preselections_ele = ['trigger_ele','MET',"METfilters",'good_electron']
+            regions = {
+                "ele_PreSel"       :preselections_ele,
+                #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
+
+                "ele_ABCD"         :preselections_ele+["cls_ABCD"], 
+                "ele_ABCD_OOT"     :preselections_ele+["cls_OOT"],
+                "ele_1cls"         :preselections_ele+["n_cls"],
+                "ele_JetMuVeto"    :preselections_ele+["cls_JetMuVeto"],
+                "ele_JetMuStaVeto" :preselections_ele+["cls_JetMuStaVeto"],
+                "ele_StatVeto"     :preselections_ele+["cls_StatVeto"],
+                "ele_ABCD_nminus1" :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name']+"_nminus1" for c in cutflow1_ele],
+                "noselection":[],
+            } 
+         
         
         weights = Weights(len(events))
         if not isData:
@@ -478,28 +483,50 @@ class MyProcessor(processor.ProcessorABC):
             output['gLLP_pt'].fill(dataset=dataset,gLLP_pt = ak.firsts(llp[cut].pt), weight=weights.weight()[cut])
             output['gLLP_eta'].fill(dataset=dataset,gLLP_eta = ak.firsts(llp[cut].eta), weight=weights.weight()[cut])
             output['glepdPhi'].fill(dataset=dataset,gLLP_lepdPhi = np.abs(ak.flatten(events[cut].gLLP_lepdPhi)), weight=weights.weight()[cut])
-            
 
-        ## Fill n-1 plot
-        cut = selection.all(*set([]))
-        nMinus1cuts = [c['name']+"_nminus1" for c in cutflow1_mu]
-        presel = ['trigger_ele','good_electron','MET',"METfilters",'n_cls']
-        output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=0,weight=weights.weight()[cut])
-        cut = selection.all(*presel)
-        output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=1,weight=weights.weight()[cut])
-        for i, cut in enumerate(nMinus1cuts):
-            nMinus1cut = nMinus1cuts[:i]+nMinus1cuts[i+1:] + presel
-            cut = selection.all(*nMinus1cut)
-            output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=i+2,weight=weights.weight()[cut])            
-        cut = selection.all(*regions_mu["mu_ABCD_nminus1"])
-        output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=len(nMinus1cuts)+2,weight=weights.weight()[cut])            
+        # Fill n-1 plots
+        if isMuonChannel:
+            preselections_mu = ['trigger_mu','MET',"METfilters",'good_mu']
+            cut = selection.all(*set([]))
+            nMinus1cuts = [c['name']+"_nminus1" for c in cutflow3_mu] 
+            output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=0,weight=weights.weight()[cut])
+            cut = selection.all(*preselections_mu)
+            output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=1,weight=weights.weight()[cut])
+            for i, cut in enumerate(nMinus1cuts):
+                nMinus1cut = nMinus1cuts[:i]+nMinus1cuts[i+1:] + preselections_mu
+                cut = selection.all(*nMinus1cut)
+                output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=i+2,weight=weights.weight()[cut])
+            cut = selection.all(*regions["mu_ABCD_nminus1"])
+            output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=len(nMinus1cuts)+2,weight=weights.weight()[cut])
 
-        cf_regions ={
-            #"ele_signal_ABCD_cf2":["Acceptance",'trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2_ele],            
-            #"ele_ABCD_cf2"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2_ele],            
-            #"ele_ABCD_cf3"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3_ele],            
-            "mu_ABCD"            :['trigger_mu','good_mu','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3_mu], 
+
+        elif isElectronChannel:
+            preselections_ele = ['trigger_ele','MET',"METfilters",'good_electron']
+            cut = selection.all(*set([]))
+            nMinus1cuts = [c['name']+"_nminus1" for c in cutflow3_ele]
+            output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=0,weight=weights.weight()[cut])
+            cut = selection.all(*preselections_ele)
+            output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=1,weight=weights.weight()[cut])
+            for i, cut in enumerate(nMinus1cuts):
+                nMinus1cut = nMinus1cuts[:i]+nMinus1cuts[i+1:] + preselections_ele
+                cut = selection.all(*nMinus1cut)
+                output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=i+2,weight=weights.weight()[cut])
+            cut = selection.all(*regions["ele_ABCD_nminus1"])
+            output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=len(nMinus1cuts)+2,weight=weights.weight()[cut])
+
+
+        
+        if isMuonChannel:
+            cf_regions ={
+                "mu_ABCD"            :['trigger_mu','good_mu','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3_mu],
         }
+        elif isElectronChannel:
+            cf_regions ={
+                "ele_signal_ABCD_cf2":["Acceptance",'trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2_ele],            
+                "ele_ABCD_cf2"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2_ele],            
+                "ele_ABCD_cf3"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3_ele],             
+        }
+
         for region,cuts in cf_regions.items():
             ## Fill cut flow plots 
             allcuts = set([])
@@ -520,7 +547,7 @@ class MyProcessor(processor.ProcessorABC):
                                     weight=weights.weight()[cut])            
 
         ## Fill regions plot
-        for region,cuts in regions_mu.items():
+        for region,cuts in regions.items():
 
             ## Fill other regions without cutflows
             cut = selection.all(*cuts)

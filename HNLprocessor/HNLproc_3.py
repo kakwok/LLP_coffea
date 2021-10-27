@@ -201,7 +201,7 @@ class MyProcessor(processor.ProcessorABC):
         #Require electron to have dR>0.4 for ALL of the clusters in the event
         good_ele = good_ele[ak.all(dR_ele_cls>0.4,axis=2)]
         dphi_cluster_ele = ak.fill_none(cluster_dir.delta_phi(ak.firsts(good_ele)),-999)
-        dr_cluster_ele =  ak.fill_none(cluster_dir.delta_r(ak.firsts(good_ele)),-999)
+
 
 
         good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)]
@@ -211,7 +211,7 @@ class MyProcessor(processor.ProcessorABC):
         #Require muon to have dR>0.4 for ALL of the clusters in the event
         good_mu = good_mu[ak.all(dR_mu_cls>0.4,axis=2)]
         dphi_cluster_mu = ak.fill_none(cluster_dir.delta_phi(ak.firsts(good_mu)),-999)
-        dr_cluster_mu = ak.fill_none(cluster_dir.delta_r(ak.firsts(good_mu)),-999)
+
 
 
         cluster= ak.zip(
@@ -239,9 +239,7 @@ class MyProcessor(processor.ProcessorABC):
                 "RB1":events.cscRechitCluster3_match_RB1_0p4,
                 "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_ele":dphi_cluster_ele,                
-                "dphi_cluster_mu" :dphi_cluster_mu,
-                "dr_cluster_ele":dr_cluster_ele, 
-                "dr_cluster_mu":dr_cluster_mu,
+                "dphi_cluster_mu" :dphi_cluster_mu, 
             }
         )
         ## All possible pairs 
@@ -287,7 +285,7 @@ class MyProcessor(processor.ProcessorABC):
         dphi_MET      = (cluster.dphi_cluster_MET<0.75)        
         dphi_ele      = (cluster.dphi_cluster_ele>2.5)        
         dphi_mu       = (cluster.dphi_cluster_mu>2.5)
-        dr_mu         = (cluster.dr_cluster_mu>0.4)
+
 
         selection = PackedSelection(np.uint64)        
         
@@ -403,17 +401,12 @@ class MyProcessor(processor.ProcessorABC):
             & (ME11_12_veto)
             & ((MB1seg_veto) & (RB1_veto))
         ]   
-        cls_drMUVeto = cluster[
-        (dr_mu)
-        ]     
 
         selection.add('cls_OOT',ak.num(cls_OOT,axis=1)>0)
         selection.add('cls_StatVeto',ak.num(cls_StaVeto,axis=1)>0)
         selection.add('cls_JetMuVeto',ak.num(cls_JetMuVeto,axis=1)>0)
         selection.add('cls_JetMuStaVeto',ak.num(cls_JetMuStaVeto,axis=1)>0)
-        selection.add('cls_ABCD',ak.num(cls_ABCD,axis=1)>0)
-        selection.add('cls_drMUVeto',ak.num(cls_drMUVeto,axis=1)>0)
-       
+        selection.add('cls_ABCD',ak.num(cls_ABCD,axis=1)>0) 
 
         if isMuonChannel:
             preselections_mu = ['trigger_mu','MET',"METfilters",'good_mu']

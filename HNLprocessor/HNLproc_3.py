@@ -62,7 +62,15 @@ class MyProcessor(processor.ProcessorABC):
                 hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
                 hist.Bin("dphi_mu", r'$\Delta\phi$(cluster,mu)', 30, 0, np.pi),
                 hist.Bin("dphi_MET", r'$\Delta\phi$(cluster,MET)', 30, 0, np.pi),
-            ), 
+            ),
+            "ClusterID": hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Cat("region", "region"),
+                hist.Bin("NStation", "NStation", 5, 0, 5),
+                hist.Bin("AvgStation", "AvgStation", 30, 0,5),
+                hist.Bin("ClusterEta", "ClusterEta", 30, 0, 2.5),
+             ),
+
+
             ## reco var.
             "nLeptons": hist.Hist("Events",hist.Cat("dataset", "Dataset"),
                 hist.Bin("nLeptons", "nLeptons", 5, 0, 5),
@@ -195,23 +203,14 @@ class MyProcessor(processor.ProcessorABC):
         )
       
         good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.4) & (ele.passId)]
-        ele_cls_pair = ak.cartesian({'ele':good_ele,"cls":cluster_dir},axis=1,nested=True)
-        #compute dR between for each pairs
-        dR_ele_cls = ele_cls_pair.cls.delta_r(ele_cls_pair.ele)
-        #Require electron to have dR>0.4 for ALL of the clusters in the event
-        good_ele = good_ele[ak.all(dR_ele_cls>0.4,axis=2)]
+       
         dphi_cluster_ele = ak.fill_none(cluster_dir.delta_phi(ak.firsts(good_ele)),-999)
+        dr_cluster_ele = ak.fill_none(cluster_dir.delta_r(ak.firsts(good_ele)),-999)
 
-
-
-        good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)]
-        mu_cls_pair = ak.cartesian({'mu':good_mu,"cls":cluster_dir},axis=1,nested=True)
-        #compute dR between for each pairs
-        dR_mu_cls = mu_cls_pair.cls.delta_r(mu_cls_pair.mu)
-        #Require muon to have dR>0.4 for ALL of the clusters in the event
-        good_mu = good_mu[ak.all(dR_mu_cls>0.4,axis=2)]
+        good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)] 
+        
         dphi_cluster_mu = ak.fill_none(cluster_dir.delta_phi(ak.firsts(good_mu)),-999)
-
+        dr_cluster_mu = ak.fill_none(cluster_dir.delta_r(ak.firsts(good_mu)),-999)
 
 
         cluster= ak.zip(
@@ -240,7 +239,9 @@ class MyProcessor(processor.ProcessorABC):
                 "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_ele":dphi_cluster_ele,                
                 "dphi_cluster_mu" :dphi_cluster_mu, 
-            }
+                "dr_cluster_ele": dr_cluster_ele,
+                "dr_cluster_mu" : dr_cluster_mu,
+                }
         )
         ## All possible pairs 
         #cls_lep_pair = ak.cartesian({"cls":cluster_dir,'lep':lep},axis=1,nested=True)
@@ -285,7 +286,8 @@ class MyProcessor(processor.ProcessorABC):
         dphi_MET      = (cluster.dphi_cluster_MET<0.75)        
         dphi_ele      = (cluster.dphi_cluster_ele>2.5)        
         dphi_mu       = (cluster.dphi_cluster_mu>2.5)
-
+        dr_ele        = (cluster.dr_cluster_ele>0.4)
+        dr_mu         = (cluster.dr_cluster_mu>0.4)
 
         selection = PackedSelection(np.uint64)        
         
@@ -293,8 +295,8 @@ class MyProcessor(processor.ProcessorABC):
         selection.add('METfilters',events.Flag2_all==True)
         selection.add('trigger_ele',events.SingleEleTrigger==True)
         selection.add('trigger_mu',events.SingleMuonTrigger==True)
-        selection.add('good_electron',ak.num(good_ele,axis=1)>0)
-        selection.add('good_mu', ak.num(good_mu,axis=1)>0)
+        selection.add('good_electron',ak.num(good_ele,axis=1)==1)
+        selection.add('good_mu', ak.num(good_mu,axis=1)==1)
         selection.add('MET',events.metXYCorr>30)
         selection.add('W_CR', (events.MT>70) & (events.MT<90) &(events.metXYCorr>60))
        
@@ -302,6 +304,7 @@ class MyProcessor(processor.ProcessorABC):
             cutflow3_mu = [
                 {"name":"cf3_ME11_12"    ,  "cut":ME11_12_veto},
                 {"name":"cf3_MuVeto"     ,  "cut":muonVeto_mask},
+                {"name":"cf3_MuDrVeto"   ,  "cut":dr_mu},
                 {"name":"cf3_JetVeto"    ,  "cut":jetVeto_mask},
                 {"name":"cf3_MB1seg"     ,  "cut":MB1seg_veto},
                 {"name":"cf3_RB1"        ,  "cut":RB1_veto},
@@ -309,7 +312,7 @@ class MyProcessor(processor.ProcessorABC):
                 {"name":"cf3_TimeSpread" ,  "cut":timeSpreadCut},
                 {"name":"cf3_ClusID"     ,  "cut":ClusterID},
                 {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
-                {"name":"cf3_dphi_lep_ele",  "cut":dphi_mu},
+                {"name":"cf3_dphi_mu"    ,  "cut":dphi_mu},
             ]
             allcuts = (ME11_12_veto)
             for i,s in enumerate(cutflow3_mu):
@@ -375,6 +378,7 @@ class MyProcessor(processor.ProcessorABC):
 
         cls_OOT = cluster[
             ((jetVeto_mask) &(muonVeto_mask))
+            & (dr_mu)
             & (ME11_12_veto)
             & ((MB1seg_veto) & (RB1_veto))
             & (OOT_timeCut)
@@ -383,6 +387,7 @@ class MyProcessor(processor.ProcessorABC):
         ]
         cls_ABCD = cluster[
             ((jetVeto_mask) &(muonVeto_mask))
+            & (dr_mu)
             & (ME11_12_veto)
             & ((MB1seg_veto) & (RB1_veto))
             & (IntimeCut)
@@ -394,10 +399,11 @@ class MyProcessor(processor.ProcessorABC):
              (ME11_12_veto)& ((MB1seg_veto) & (RB1_veto))
         ]        
         cls_JetMuVeto = cluster[
-            ((jetVeto_mask) &(muonVeto_mask))
+            ((jetVeto_mask) &(muonVeto_mask))& (dr_mu)
         ]        
         cls_JetMuStaVeto = cluster[
             ((jetVeto_mask) &(muonVeto_mask))
+            & (dr_mu)
             & (ME11_12_veto)
             & ((MB1seg_veto) & (RB1_veto))
         ]   
@@ -553,6 +559,13 @@ class MyProcessor(processor.ProcessorABC):
                                             dphi_mu =np.abs(ak.flatten(cluster[cut].dphi_cluster_mu)),
                                             dphi_MET=np.abs(ak.flatten(cluster[cut].dphi_cluster_MET)),
                                             weight=ak.flatten(w_cls))
+            output["ClusterID"].fill(dataset=dataset,region=region,
+                                            NStation=ak.flatten(cluster[cut].NStation10),
+                                            AvgStation =np.abs(ak.flatten(cluster[cut].AvgStation10)),
+                                            ClusterEta=np.abs(ak.flatten(cluster[cut].eta)),
+                                            weight=ak.flatten(w_cls))
+
+
 
             output["ClusterSize"].fill(dataset=dataset,region=region,
                                        ClusterSize=ak.flatten(cluster[cut].size),

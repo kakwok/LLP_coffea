@@ -71,13 +71,19 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('--test', dest='test', action='store_true',default = False, help='Run local test with small fileset')
     parser.add_option('--local', dest='local', action='store_true',default = False, help='Run local test with 1 chunk of full fileset')
-    parser.add_option('--condor', dest='condor', action='store_true',default = False, help='Run local test with 1 chunk of full fileset')
+    parser.add_option('--condor', dest='condor', action='store_true',default = False, help='Run on condor with full fileset')
 
     parser.add_option('-o', dest='outf', default='HNL_histograms.pickle', help='collection of histograms')
+    parser.add_option('-f', dest='inf', default='signals_skim.json' , help='Input fileset')   
+
 
     (options, args) = parser.parse_args()
-    outf    = "HNL_histograms_all_Sep30.pickle"
-    fileset = "signals_skim.json"
+    #outf    = "HNL_histograms_all_Sep30.pickle"
+    #fileset = "signals_skim.json"
+    outf = options.outf
+    fileset = options.inf
+    print("Input fileset: ",fileset)
+    
 
     if options.test:
         runLocal("test.pickle","test.json")
@@ -85,3 +91,4 @@ if __name__ == '__main__':
         runLocal(outf,fileset)
     elif options.condor:
         runLPC(outf,fileset)
+    print("Written output to:",outf)

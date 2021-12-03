@@ -35,6 +35,11 @@ class MyProcessor(processor.ProcessorABC):
                 hist.Bin("nCluster", "nCluster", 4, 0, 4),
                 cutflow_axis,
             ),                   
+            "nCluster_dt": hist.Hist("Events",hist.Cat("dataset", "Dataset"),                
+                hist.Cat("region", "region"),
+                hist.Bin("nCluster", "nCluster", 4, 0, 4),
+                cutflow_axis,
+            ),                   
             "nCluster_n-1": hist.Hist("Events",hist.Cat("dataset", "Dataset"),                
                 hist.Bin("nCluster", "nCluster", 4, 0, 4),
                 nMinus1_axis,
@@ -52,6 +57,20 @@ class MyProcessor(processor.ProcessorABC):
                 hist.Bin("ClusterTime", "ClusterTime", 40, -100, 100),
             ),   
             "dphi_cluster_lep": hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Cat("region", "region"),                                          
+                hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
+                hist.Bin("dphi_lep", r'$\Delta\phi$(cluster,lep)', 30, 0, np.pi),
+                hist.Bin("dphi_MET", r'$\Delta\phi$(cluster,MET)', 30, 0, np.pi),
+            ), 
+            "ClusterSize_dt": hist.Hist("Events",hist.Cat("dataset", "Dataset"),   
+                hist.Cat("region", "region"),
+                hist.Bin("ClusterSize", r"$N_{rechits}$", 50, 0, 2000),
+            ),  
+            "ClusterTime_dt": hist.Hist("Events",hist.Cat("dataset", "Dataset"),                
+                hist.Cat("region", "region"),
+                hist.Bin("ClusterBx", "Cluster Bx", 20, -10, 10),
+            ),   
+            "dphi_cluster_dt": hist.Hist("Events",hist.Cat("dataset", "Dataset"),
                 hist.Cat("region", "region"),                                          
                 hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
                 hist.Bin("dphi_lep", r'$\Delta\phi$(cluster,lep)', 30, 0, np.pi),
@@ -179,6 +198,17 @@ class MyProcessor(processor.ProcessorABC):
         #compute dphi with selected electron with highest pT
         dphi_cluster_ele = ak.fill_none(cluster_dir.delta_phi(ak.firsts(good_ele)),-999)
         dphi_cluster_mu = ak.fill_none(cluster_dir.delta_phi(ak.firsts(muons)),-999)
+        dt_cluster_dir= ak.zip(
+        {
+                'pt':ak.ones_like(events.dtRechitClusterEta),
+                "eta":events.dtRechitClusterEta,
+                "phi":events.dtRechitClusterPhi,
+                'mass':ak.zeros_like(events.dtRechitClusterEta)
+            },with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior
+        )
+        dphi_dt_cluster_ele = ak.fill_none(dt_cluster_dir.delta_phi(ak.firsts(good_ele)),-999)
+        dphi_dt_cluster_mu = ak.fill_none(dt_cluster_dir.delta_phi(ak.firsts(muons)),-999)
        
         cluster= ak.zip(
             {                
@@ -203,11 +233,35 @@ class MyProcessor(processor.ProcessorABC):
                 "RE12":events.cscRechitCluster3_match_RE12_0p4,
                 "MB1seg":events.cscRechitCluster3_match_MB1Seg_0p4,
                 "RB1":events.cscRechitCluster3_match_RB1_0p4,
-                "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
+                "dphi_cluster_MET":events.cscRechitCluster3MetEENoiseXYCorr_dPhi,                
                 "dphi_cluster_ele":dphi_cluster_ele,                
                 #"dphi_cluster_mu" :cluster_dir.delta_phi(ak.firsts(muons)),                
             }
         )
+
+        dt_cluster = ak.zip(
+            {
+                 "size":events.dtRechitClusterSize,
+                 "x":events.dtRechitClusterX,
+                 "y":events.dtRechitClusterY,
+                 "z":events.dtRechitClusterZ,
+                 "eta":events.dtRechitClusterEta,
+                 "phi":events.dtRechitClusterPhi,
+                 "JetVetoPt":events.dtRechitClusterJetVetoPt,
+                 "MuonVetoPt":events.dtRechitClusterMuonVetoPt,
+                 "NStation10":events.dtRechitClusterNStation10,
+                 "AvgStation10":events.dtRechitClusterAvgStation10,
+                 "MaxStation":events.dtRechitClusterMaxStation,
+                 "nRPC":events.dtRechitCluster_match_RPChits_dPhi0p5,
+                 "nMB1_cosmic_minus":events.dtRechitCluster_match_MB1hits_cosmics_minus,
+                 "nMB1_cosmic_plus":events.dtRechitCluster_match_MB1hits_cosmics_plus,
+                 "nMB1":events.dtRechitCluster_match_MB1hits_0p5,
+                 "rpcBx":events.dtRechitCluster_match_RPCBx_dPhi0p5,
+                 "dphi_cluster_MET":events.dtRechitClusterMetEENoise_dPhi,
+                 "dphi_cluster_ele":dphi_dt_cluster_ele,
+            }
+        )
+
         ## All possible pairs 
         #cls_lep_pair = ak.cartesian({"cls":cluster_dir,'lep':lep},axis=1,nested=True)
         #dphi_lep_cls = cls_lep_pair.cls.delta_phi(cls_lep_pair.lep)       
@@ -246,17 +300,29 @@ class MyProcessor(processor.ProcessorABC):
         OOT_timeCut   = (cluster.time < -12.5) #OOT for data
         IntimeCut     = (cluster.time < 12.5) & (cluster.time>-5) ## In-time otherwise        
         timeSpreadCut = (cluster.timeSpread<20)        
-        dphi_MET      = (cluster.dphi_cluster_MET<0.75)        
-        dphi_lep      = (cluster.dphi_cluster_ele>2.5)        
+        dphi_MET      = (abs(cluster.dphi_cluster_MET)<0.75)        
+        dphi_lep      = (abs(cluster.dphi_cluster_ele)>2.5)       
+
+        ## DT cluster selections
+        dt_jetVeto  = (dt_cluster.JetVetoPt<20.0)
+        dt_muonVeto = (dt_cluster.MuonVetoPt<10.0)
+        dt_MB1veto  = (dt_cluster.nMB1<=1)
+        dt_RPC      = (dt_cluster.nRPC>=1)
+        dt_MB1adj   = (dt_cluster.nMB1_cosmic_minus<=8) & (dt_cluster.nMB1_cosmic_plus<=8)
+        dt_time     = (dt_cluster.rpcBx==0)
+        dt_OOT      = (dt_cluster.rpcBx>=-100)&(dt_cluster.rpcBx<0)
+        dt_dphi_MET  = (abs(dt_cluster.dphi_cluster_MET)<1)
+        dt_size      = (dt_cluster.size>=100)
 
         selection = PackedSelection(np.uint64)        
         
         selection.add('Acceptance',ak.firsts(events.gLLP_csc)==1)
+        selection.add('Acceptance_dt',ak.firsts(events.gLLP_dt)==1)
         selection.add('METfilters',events.Flag2_all==True)
         selection.add('trigger_ele',events.SingleEleTrigger==True)
         selection.add('trigger_mu',events.SingleMuonTrigger==True)
-        selection.add('good_electron',ak.num(good_ele,axis=1)>0)
-        selection.add('MET',events.metXYCorr>30)
+        selection.add('good_electron',ak.num(good_ele,axis=1)==1)
+        selection.add('MET',events.metEENoise>=30)
         selection.add('W_CR', (events.MT>70) & (events.MT<90) &(events.metXYCorr>60))
        
         cutflow1 = [
@@ -264,18 +330,11 @@ class MyProcessor(processor.ProcessorABC):
             {"name":"MuVeto"     ,  "cut":muonVeto_mask},
             {"name":"ME11_12"    ,  "cut":ME11_12_veto},
             {"name":"MB1seg"     ,  "cut":MB1seg_veto},
-            {"name":"RB1"        ,  "cut":RB1_veto},
-            {"name":"Time"       ,  "cut":IntimeCut},
-            {"name":"TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"ClusID"     ,  "cut":ClusterID},
-            {"name":"cf2_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf2_dphi_lep"   ,  "cut":dphi_lep},
         ]
         allcuts = (jetVeto_mask)
         for i,s in enumerate(cutflow1):
             allcuts = (allcuts) & (s["cut"])
             selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
-            selection.add(s["name"]+"_nminus1",ak.num(cluster[s['cut']],axis=1)>0)
 
         cutflow2 = [
             {"name":"cf2_ME11_12"    ,  "cut":ME11_12_veto},
@@ -293,26 +352,51 @@ class MyProcessor(processor.ProcessorABC):
         for i,s in enumerate(cutflow2):
             allcuts = (allcuts) & (s["cut"])
             selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
+            selection.add(s["name"]+"_nminus1",ak.num(cluster[s['cut']],axis=1)>0)
         cutflow3 = [
             {"name":"cf3_ME11_12"    ,  "cut":ME11_12_veto},
             {"name":"cf3_MuVeto"     ,  "cut":muonVeto_mask},
             {"name":"cf3_JetVeto"    ,  "cut":jetVeto_mask},
             {"name":"cf3_MB1seg"     ,  "cut":MB1seg_veto},
             {"name":"cf3_RB1"        ,  "cut":RB1_veto},
-            {"name":"cf3_Time"       ,  "cut":IntimeCut},
-            {"name":"cf3_TimeSpread" ,  "cut":timeSpreadCut},
-            {"name":"cf3_ClusID"     ,  "cut":ClusterID},
-            {"name":"cf3_dphi_MET"   ,  "cut":dphi_MET},
-            {"name":"cf3_dphi_lep"   ,  "cut":dphi_lep},
         ]
         allcuts = (ME11_12_veto)
         for i,s in enumerate(cutflow3):
             allcuts = (allcuts) & (s["cut"])
             selection.add(s["name"],ak.num(cluster[allcuts],axis=1)>0)
 
+        dt_cutflow = [
+            {"name":"dt_JetVeto"    ,  "cut":dt_jetVeto},
+            {"name":"dt_MuVeto"     ,  "cut":dt_muonVeto},
+            {"name":"dt_MB1veto"    ,  "cut":dt_MB1veto},
+            {"name":"dt_RPC"        ,  "cut":dt_RPC},
+            {"name":"dt_MB1adj"     ,  "cut":dt_MB1adj},
+            {"name":"dt_dphi_MET"   ,  "cut":dt_dphi_MET},
+            {"name":"dt_Size"       ,  "cut":dt_size},
+        ]
+        allcuts = (dt_jetVeto)
+        for i,s in enumerate(dt_cutflow):
+            allcuts = (allcuts) & (s["cut"])
+            selection.add(s["name"],ak.num(dt_cluster[allcuts],axis=1)>0)
+
         selection.add('n_cls',ak.num(cluster,axis=1)>0)
+        selection.add('n_cls_dt',ak.num(dt_cluster,axis=1)>0)
         selection.add('nJet',events.nJets>0)
 
+        dt_cls_OOT = dt_cluster[
+            ((dt_jetVeto) &(dt_muonVeto))
+            & (dt_MB1veto)
+            & (dt_RPC)
+            & (dt_MB1adj)
+            & (dt_OOT)
+        ]
+        dt_cls_ABCD = dt_cluster[
+            ((dt_jetVeto) &(dt_muonVeto))
+            & (dt_MB1veto)
+            & (dt_RPC)
+            & (dt_MB1adj)
+            & (dt_time)
+        ]
         cls_OOT = cluster[
             ((jetVeto_mask) &(muonVeto_mask))
             & (ME11_12_veto)
@@ -343,22 +427,26 @@ class MyProcessor(processor.ProcessorABC):
         ]        
 
         selection.add('cls_OOT',ak.num(cls_OOT,axis=1)>0)
+        selection.add('dt_cls_OOT',ak.num(dt_cls_OOT,axis=1)>0)
         selection.add('cls_StatVeto',ak.num(cls_StaVeto,axis=1)>0)
         selection.add('cls_JetMuVeto',ak.num(cls_JetMuVeto,axis=1)>0)
         selection.add('cls_JetMuStaVeto',ak.num(cls_JetMuStaVeto,axis=1)>0)
         selection.add('cls_ABCD',ak.num(cls_ABCD,axis=1)>0)
+        selection.add('dt_cls_ABCD',ak.num(dt_cls_ABCD,axis=1)>0)
 
         preselections = ['trigger_ele','MET',"METfilters",'good_electron']       
         regions = {
             "ele_PreSel"       :preselections,            
             #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
             "ele_ABCD"         :preselections+["cls_ABCD"],            
+            "ele_ABCD_dt"      :preselections+["dt_cls_ABCD"],            
             "ele_ABCD_OOT"     :preselections+["cls_OOT"],
+            "ele_ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
             "ele_1cls"         :preselections+["n_cls"],            
             "ele_JetMuVeto"    :preselections+["cls_JetMuVeto"],
             "ele_JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
             "ele_StatVeto"     :preselections+["cls_StatVeto"],
-            "ele_ABCD_nminus1" :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name']+"_nminus1" for c in cutflow1],            
+            "ele_ABCD_nminus1" :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name']+"_nminus1" for c in cutflow2],            
             "noselection":[],
         }
         
@@ -400,7 +488,7 @@ class MyProcessor(processor.ProcessorABC):
 
         ## Fill n-1 plot
         cut = selection.all(*set([]))
-        nMinus1cuts = [c['name']+"_nminus1" for c in cutflow1]
+        nMinus1cuts = [c['name']+"_nminus1" for c in cutflow2]
         presel = ['trigger_ele','good_electron','MET',"METfilters",'n_cls']
         output["nCluster_n-1"].fill(dataset=dataset,nCluster=ak.num(cluster[cut],axis=1),Nminus1=0,weight=weights.weight()[cut])
         cut = selection.all(*presel)
@@ -414,27 +502,44 @@ class MyProcessor(processor.ProcessorABC):
 
         cf_regions ={
             "ele_signal_ABCD_cf2":["Acceptance",'trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2],            
+            "ele_ABCD_cf1"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow1],            
             "ele_ABCD_cf2"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow2],            
             "ele_ABCD_cf3"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls']+[c['name'] for c in cutflow3],            
+            "ele_signal_ABCD_dt":["Acceptance_dt",'trigger_ele','good_electron','MET',"METfilters",'n_cls_dt']+[c['name'] for c in dt_cutflow],            
+            "ele_ABCD_dt"       :['trigger_ele','good_electron','MET',"METfilters",'n_cls_dt']+[c['name'] for c in dt_cutflow],            
         }
         for region,cuts in cf_regions.items():
             ## Fill cut flow plots 
             allcuts = set([])
             cut = selection.all(*allcuts)
-            w_cls      = (weights.weight() * ak.ones_like(cluster.size))[cut] ## use size to pick-up the cluster shape
-            output["nCluster"].fill(dataset=dataset,region=region,
-                                    nCluster=ak.num(cluster[cut],axis=1),
-                                    cutFlow=0,
-                                    weight=weights.weight()[cut])            
-            ## Fill 1-to-n-th cutflow
-            for i, cut in enumerate(cuts):
-                allcuts.add(cut)
-                cut = selection.all(*allcuts)
-                w_cls      = (weights.weight() * ak.ones_like(cluster.size))[cut] ## use size to pick-up the cluster shape
+            ### CSC cutflows
+            if not "dt" in region:
                 output["nCluster"].fill(dataset=dataset,region=region,
-                                    nCluster=ak.num(cluster[cut],axis=1),
-                                    cutFlow=i+1,
-                                    weight=weights.weight()[cut])            
+                                        nCluster=ak.num(cluster[cut],axis=1),
+                                        cutFlow=0,
+                                        weight=weights.weight()[cut])            
+                ## Fill 1-to-n-th cutflow
+                for i, cut in enumerate(cuts):
+                    allcuts.add(cut)
+                    cut = selection.all(*allcuts)
+                    output["nCluster"].fill(dataset=dataset,region=region,
+                                        nCluster=ak.num(cluster[cut],axis=1),
+                                        cutFlow=i+1,
+                                        weight=weights.weight()[cut])           
+            else: 
+                ## Fill dt cutflows
+                output["nCluster_dt"].fill(dataset=dataset,region=region,
+                                        nCluster=ak.num(dt_cluster[cut],axis=1),
+                                        cutFlow=0,
+                                        weight=weights.weight()[cut])            
+                ## Fill 1-to-n-th cutflow
+                for i, cut in enumerate(cuts):
+                    allcuts.add(cut)
+                    cut = selection.all(*allcuts)
+                    output["nCluster_dt"].fill(dataset=dataset,region=region,
+                                        nCluster=ak.num(dt_cluster[cut],axis=1),
+                                        cutFlow=i+1,
+                                        weight=weights.weight()[cut])           
 
         ## Fill regions plot
         for region,cuts in regions.items():
@@ -443,27 +548,42 @@ class MyProcessor(processor.ProcessorABC):
             cut = selection.all(*cuts)
             ##per-event weight
             weight = weights.weight()[cut]
-            w_cls      = (weights.weight() * ak.ones_like(cluster.size))[cut] ## use size to pick-up the cluster shape
- 
-            output["dphi_cluster_lep"].fill(dataset=dataset,region=region,
-                                            ClusterSize=ak.flatten(cluster[cut].size),
-                                            dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_ele)),
-                                            dphi_MET=np.abs(ak.flatten(cluster[cut].dphi_cluster_MET)),
-                                            weight=ak.flatten(w_cls))
 
-            output["ClusterSize"].fill(dataset=dataset,region=region,
-                                       ClusterSize=ak.flatten(cluster[cut].size),
-                                       weight=ak.flatten(w_cls))        
-            output["ClusterTime"].fill(dataset=dataset,region=region,
-                                       ClusterTime=ak.flatten(cluster[cut].time),
-                                       weight=ak.flatten(w_cls))        
-            output["metXYCorr"].fill(dataset=dataset,region=region,
-                                     metXYCorr=events[cut].metXYCorr,
-                                    weight=weight)                    
-            output['jetPt'].fill(dataset=dataset, region = region, 
-                                jetPt = ak.to_numpy(ak.firsts(events[cut].jetPt)),
-                                weight=weight)
-            output["MT"].fill(dataset=dataset,region=region,MT=events[cut].MT,weight=weight)        
+            if not "dt" in region:
+                w_cls      = (weights.weight() * ak.ones_like(cluster.size))[cut] ## use size to pick-up the cluster shape
+                output["dphi_cluster_lep"].fill(dataset=dataset,region=region,
+                                                ClusterSize=ak.flatten(cluster[cut].size),
+                                                dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_ele)),
+                                                dphi_MET=np.abs(ak.flatten(cluster[cut].dphi_cluster_MET)),
+                                                weight=ak.flatten(w_cls))
+                output["ClusterSize"].fill(dataset=dataset,region=region,
+                                           ClusterSize=ak.flatten(cluster[cut].size),
+                                           weight=ak.flatten(w_cls))        
+                output["ClusterTime"].fill(dataset=dataset,region=region,
+                                           ClusterTime=ak.flatten(cluster[cut].time),
+                                           weight=ak.flatten(w_cls))        
+                output["metXYCorr"].fill(dataset=dataset,region=region,
+                                         metXYCorr=events[cut].metXYCorr,
+                                        weight=weight)                    
+                output['jetPt'].fill(dataset=dataset, region = region, 
+                                    jetPt = ak.to_numpy(ak.firsts(events[cut].jetPt)),
+                                    weight=weight)
+                output["MT"].fill(dataset=dataset,region=region,MT=events[cut].MT,weight=weight)       
+            else:
+                w_cls      = (weights.weight() * ak.ones_like(dt_cluster.size))[cut] ## use size to pick-up the cluster shape
+                output["dphi_cluster_dt"].fill(dataset=dataset,region=region,
+                                                ClusterSize=ak.flatten(dt_cluster[cut].size),
+                                                dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_ele)),
+                                                dphi_MET=np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_MET)),
+                                                weight=ak.flatten(w_cls))
+                output["ClusterSize_dt"].fill(dataset=dataset,region=region,
+                                           ClusterSize=ak.flatten(dt_cluster[cut].size),
+                                           weight=ak.flatten(w_cls))        
+                output["ClusterTime_dt"].fill(dataset=dataset,region=region,
+                                           ClusterBx=ak.flatten(dt_cluster[cut].rpcBx),
+                                           weight=ak.flatten(w_cls))        
+
+ 
         return output
 
     def postprocess(self, accumulator):

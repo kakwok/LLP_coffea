@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser.add_option('-o', dest='outf', default='HNL_histograms.pickle', help='collection of histograms')
 
     (options, args) = parser.parse_args()
-    outf    = "HNL_histograms_all_Sep30.pickle"
+    outf    = "HNL_histograms_all_Nov12.pickle"
     fileset = "signals_skim.json"
 
     if options.test:

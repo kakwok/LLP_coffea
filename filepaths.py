@@ -81,14 +81,25 @@ def writejson(fileset,fout):
         print("working on ",sample)
         newpaths = []
         for f in filelist:
-            #newpaths.append(f.replace("/eos/uscms/",'root://xcache//')) ## coffea-casa
-            newpaths.append(f.replace("/eos/uscms/",'root://cmsxrootd.fnal.gov//'))
+            newpaths.append(f.replace("/eos/uscms/",'root://xcache//')) ## coffea-casa
+            #newpaths.append(f.replace("/eos/uscms/",'root://cmsxrootd.fnal.gov//'))
         finaljson[sample] = newpaths
     outf.write((json.dumps(finaljson,indent=4)))
     print("Json written to :", fout)
     return
 
+# For coffea-casa
+def replaceFilepath(inputjson):
+    outputjson = inputjson.replace(".json","_casa.json")
+    with open(inputjson) as f:
+        d = json.load(f)
+    output ={}
+    for k,flist in d.items():
+        output[k]=[f.replace("cmsxrootd.fnal.gov","xcache") for f in flist]
+    with open(outputjson, 'w') as outfile:
+        outfile.write(json.dumps(output,indent=4))
 
 #writejson(signals_muon,"signals.json")
-writejson(data_muon,"data_muon.json")
+#writejson(data_muon,"data_muon_casa.json")
 #writejson(signals,"all_samples.json")
+replacejson("signals.json")

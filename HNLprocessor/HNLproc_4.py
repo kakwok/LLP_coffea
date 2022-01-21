@@ -319,10 +319,10 @@ class MyProcessor(processor.ProcessorABC):
             "ABCD_OOT"     :preselections+["cls_OOT"],
             "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
             "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
-            #"1cls"         :preselections+["n_cls"],            
-            "JetMuVeto"    :preselections+["cls_JetMuVeto"],
-            "JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
-            "StatVeto"     :preselections+["cls_StatVeto"],
+            ##"1cls"         :preselections+["n_cls"],            
+            #"JetMuVeto"    :preselections+["cls_JetMuVeto"],
+            #"JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
+            #"StatVeto"     :preselections+["cls_StatVeto"],
             #"noselection":[],
         }
  

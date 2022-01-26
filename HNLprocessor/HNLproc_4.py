@@ -75,7 +75,7 @@ class MyProcessor(processor.ProcessorABC):
                 "RE12":events.cscRechitCluster3_match_RE12_0p4,
                 "MB1seg":events.cscRechitCluster3_match_MB1Seg_0p4,
                 "RB1":events.cscRechitCluster3_match_RB1_0p4,
-                "dphi_cluster_MET":events.cscRechitCluster3MetEENoiseXYCorr_dPhi,                
+                "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_lep":dphi_cluster_lep,                
                 "dr_cluster_lep":dr_cluster_lep,                
             }
@@ -313,7 +313,7 @@ class MyProcessor(processor.ProcessorABC):
 
      
         regions = {
-            "PreSel"       :preselections,            
+            #"PreSel"       :preselections,            
             #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
             "ABCD"         :preselections+["cls_ABCD"],            
             "ABCD_OOT"     :preselections+["cls_OOT"],
@@ -382,11 +382,12 @@ class MyProcessor(processor.ProcessorABC):
             else:
                 ev_cut = ak.any(cut,axis=1)   ##This is a per-cluster cut, require at least 1 passing cluster
  
+            ev_cut = ak.fill_none(ev_cut,False)
             w_evt = weights.weight()[ev_cut]
 
             if not "dt" in region:
                 w_cls      = (weights.weight() * ak.ones_like(cluster.size))[cut] ## use size to pick-up the cluster shape
-                output["dphi_cluster_lep"].fill(dataset=dataset,region=region,
+                output["dphi_cluster_csc"].fill(dataset=dataset,region=region,
                                                 ClusterSize=ak.flatten(cluster[cut].size),
                                                 dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_lep)),
                                                 dphi_MET=np.abs(ak.flatten(cluster[cut].dphi_cluster_MET)),

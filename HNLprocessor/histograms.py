@@ -31,7 +31,7 @@ histograms ={
                 hist.Cat("region", "region"),
                 hist.Bin("ClusterTime", "ClusterTime", 40, -100, 100),
             ),   
-            "dphi_cluster_lep": hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+            "dphi_cluster_csc": hist.Hist("Events",hist.Cat("dataset", "Dataset"),
                 hist.Cat("region", "region"),                                          
                 hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
                 hist.Bin("dphi_lep", r'$\Delta\phi$(cluster,lep)', 30, 0, np.pi),

@@ -5,7 +5,8 @@ import pickle,glob
 import time
 
 def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=False):
-    from HNLprocessor.HNLproc_3 import MyProcessor
+    #from HNLprocessor.HNLproc_3 import MyProcessor
+    from HNLprocessor.HNLproc_4 import MyProcessor
         
     out = processor.run_uproot_job(
         fileset,
@@ -42,7 +43,8 @@ def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True):
     client.upload_file("HNLprocessor.zip")
 
 
-    from HNLprocessor.HNLproc_3 import MyProcessor
+    #from HNLprocessor.HNLproc_3 import MyProcessor
+    from HNLprocessor.HNLproc_4 import MyProcessor
 
     print("Waiting for at least one worker...")
     client.wait_for_workers(4)
@@ -75,13 +77,17 @@ if __name__ == '__main__':
     parser.add_option('--condor', dest='condor', action='store_true',default = False, help='Run local test with 1 chunk of full fileset')
     parser.add_option('--muon', dest='muon', action='store_true',default = False, help='Run muon channel')
     parser.add_option('--full', dest='full', action='store_true',default = False, help='Run full file chunks')
-
+    parser.add_option('--fileset', dest='fileset', default = "test.json", help='input file json')
     parser.add_option('-o', dest='outf', default='HNL_histograms.pickle', help='collection of histograms')
 
     (options, args) = parser.parse_args()
-    outf    = "HNL_histograms_muon_Jan14.pickle"
-    fileset = "data_muon.json"
+    outf    = options.outf 
+    fileset = options.fileset
     isElectronChannel = not options.muon
+
+    print(" Fileset = ", fileset)
+    print(" isElectronChannel = ", isElectronChannel)
+    print(" outf              = ", outf)
 
     if options.test:
         runLocal("test.pickle","test.json",isElectronChannel)

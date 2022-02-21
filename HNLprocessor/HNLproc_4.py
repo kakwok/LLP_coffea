@@ -37,6 +37,40 @@ class MyProcessor(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
+    def buildGoodLeptons(self,events):
+        lep=ak.zip({
+            'pt':events.lepPt ,
+            'eta':events.lepEta,
+            'phi':events.lepPhi,
+            'energy':events.lepE,
+            'pdgid':events.lepPdgId,
+            'passId':events.lepPassId,
+        },with_name='PtEtaPhiELorentzVector',
+        behavior=vector.behavior    
+        )  
+            
+        ele   = lep[abs(lep.pdgid)==11]
+        muons = lep[abs(lep.pdgid)==13]
+        good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.4) & (ele.passId)]
+        good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)] 
+ 
+        if self.isElectronChannel:  good_lep = good_ele
+        elif self.isMuonChannel: good_lep = good_mu
+        return good_lep,ele, muons
+
+    def buildLLP(self,events):
+        llp=ak.zip({
+            'pt':events.gLLP_pt,
+            #'EMfrac':events.gLLP_EMFracE,
+            'e':events.gLLP_e,
+            'eta':events.gLLP_eta,
+            'z':events.gLLP_decay_vertex_z ,
+            'r':events.gLLP_decay_vertex_r,
+            'ctau':events.gLLP_ctau,
+        }) 
+        return llp 
+     
+        
     def buildCSCcluster(self, events,good_lep):
         cluster_dir= ak.zip(
         {
@@ -102,7 +136,7 @@ class MyProcessor(processor.ProcessorABC):
         })      
         
         ClusterID =((cluster.NStation10>1) & (abs(cluster.eta)<1.9))|\
-        ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==4) & (abs(cluster.eta)<1.8))|\
+        ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==4) & (abs(cluster.eta)<1.6))|\
         ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==3) & (abs(cluster.eta)<1.6))|\
         ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==2) & (abs(cluster.eta)<1.6))
         
@@ -222,39 +256,13 @@ class MyProcessor(processor.ProcessorABC):
             #output['accept'].fill(dataset=dataset,gLLP_csc=ak.firsts(events.gLLP_csc),gLLP_dt=gLLP_dt) ## only 1 LLP
             #events = events[(csc==1)]        
                                 
-        llp=ak.zip({
-            'pt':events.gLLP_pt,
-            #'EMfrac':events.gLLP_EMFracE,
-            'e':events.gLLP_e,
-            'eta':events.gLLP_eta,
-            'z':events.gLLP_decay_vertex_z ,
-            'r':events.gLLP_decay_vertex_r,
-            'ctau':events.gLLP_ctau,
-        })  
-                   
-        lep=ak.zip({
-            'pt':events.lepPt ,
-            'eta':events.lepEta,
-            'phi':events.lepPhi,
-            'energy':events.lepE,
-            'pdgid':events.lepPdgId,
-            'passId':events.lepPassId,
-        },with_name='PtEtaPhiELorentzVector',
-        behavior=vector.behavior    
-        )  
-            
-        ele   = lep[abs(lep.pdgid)==11]
-        muons = lep[abs(lep.pdgid)==13]
-        good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.4) & (ele.passId)]
-        good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)] 
- 
-        if self.isElectronChannel:  good_lep = good_ele
-        elif self.isMuonChannel: good_lep = good_mu
-
-        ## All possible pairs 
+                  
+       ## All possible pairs 
         #cls_lep_pair = ak.cartesian({"cls":cluster_dir,'lep':lep},axis=1,nested=True)
         #dphi_lep_cls = cls_lep_pair.cls.delta_phi(cls_lep_pair.lep)       
- 
+
+        llp      = self.buildLLP(events)
+        good_lep,ele,muons = self.buildGoodLeptons(events) 
         cluster = self.buildCSCcluster(events,good_lep)        
         dt_cluster = self.buildDTcluster(events,good_lep)        
 
@@ -269,8 +277,7 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['METfilters']   =events.Flag2_all==True
         selectionMasks['trigger_ele']  =events.SingleEleTrigger==True
         selectionMasks['trigger_mu']   =events.SingleMuonTrigger==True
-        selectionMasks['good_electron']=ak.num(good_ele,axis=1)==1
-        selectionMasks['good_mu']      =ak.num(good_mu,axis=1)==1
+        selectionMasks['good_lepton']  =ak.num(good_lep,axis=1)==1
         selectionMasks['MET']          =events.metEENoise>=30
         selectionMasks['n_cls']        =ak.num(cluster,axis=1)>=1
         selectionMasks['n_cls_dt']     =ak.num(dt_cluster,axis=1)>=1
@@ -313,18 +320,12 @@ class MyProcessor(processor.ProcessorABC):
                                             & (dt_clusterMasks.dt_RPC)
                                             & (dt_clusterMasks.dt_MB1adj)
                                             & (dt_clusterMasks.dt_time))
-        selectionMasks['dt_cls_ABCD_inTimeCR'] =( (( dt_clusterMasks.dt_jetVeto) &(dt_clusterMasks.dt_muonVeto))
-                                            & (dt_clusterMasks.dt_MB1veto)
-                                            & (dt_clusterMasks.dt_RPC)
-                                            & (dt_clusterMasks.dt_MB1adj)
-                                            & (dt_clusterMasks.dt_time)
-                                            & (dt_clusterMasks.dt_dphi_MET))
-
 
         if self.isElectronChannel:
-            preselections = ['trigger_ele','MET',"METfilters",'good_electron']       
-        elif self.isMuonChannel:
-            preselections = ['trigger_mu','MET',"METfilters",'good_mu']      
+            preselections = ['trigger_ele','MET',"METfilters",'good_lepton']       
+        else:
+            preselections = ['trigger_mu','MET',"METfilters",'good_lepton']       
+
 
      
         regions = {
@@ -384,7 +385,8 @@ class MyProcessor(processor.ProcessorABC):
             output['accept'].fill(dataset=dataset,
                                   gLLP_csc=ak.firsts(events.gLLP_csc),
                                   gLLP_dt=gLLP_dt,weight=weights.weight()) ## only 1 LLP
-            cut = buildMask(selectionMasks,["Acceptance"])
+
+            cut = selectionMasks["Acceptance"]
             output['gLLP_e'].fill(dataset=dataset,gLLP_e = ak.firsts(llp[cut].e) , weight=weights.weight()[cut])
             output['gLLP_pt'].fill(dataset=dataset,gLLP_pt = ak.firsts(llp[cut].pt), weight=weights.weight()[cut])
             output['gLLP_eta'].fill(dataset=dataset,gLLP_eta = ak.firsts(llp[cut].eta), weight=weights.weight()[cut])
@@ -425,6 +427,16 @@ class MyProcessor(processor.ProcessorABC):
                 output["ClusterTime"].fill(dataset=dataset,region=region,
                                            ClusterTime=ak.flatten(cluster[cut].time),
                                            weight=ak.flatten(w_cls))        
+                output["ClusterEta"].fill(dataset=dataset,region=region,
+                                           ClusterEta=np.abs(ak.flatten(cluster[cut].eta)),
+                                           weight=ak.flatten(w_cls))        
+                output["ClusterAvgStation10"].fill(dataset=dataset,region=region,
+                                           ClusterAvgStation10=np.abs(ak.flatten(cluster[cut].AvgStation10)),
+                                           weight=ak.flatten(w_cls))        
+                output["ClusterNStation10"].fill(dataset=dataset,region=region,
+                                           ClusterNStation10=ak.flatten(cluster[cut].NStation10),
+                                           weight=ak.flatten(w_cls))        
+
                 output["metXYCorr"].fill(dataset=dataset,region=region,
                                          metXYCorr=events[ev_cut].metXYCorr,
                                         weight=w_evt)                    
@@ -451,8 +463,15 @@ class MyProcessor(processor.ProcessorABC):
                 output["ClusterTime_dt"].fill(dataset=dataset,region=region,
                                            ClusterBx=ak.flatten(dt_cluster[cut].rpcBx),
                                            weight=ak.flatten(w_cls))        
-
- 
+                output["ClusterEta_dt"].fill(dataset=dataset,region=region,
+                                           ClusterEta=np.abs(ak.flatten(dt_cluster[cut].eta)),
+                                           weight=ak.flatten(w_cls))        
+                output["ClusterAvgStation10_dt"].fill(dataset=dataset,region=region,
+                                           ClusterAvgStation10=np.abs(ak.flatten(dt_cluster[cut].AvgStation10)),
+                                           weight=ak.flatten(w_cls))        
+                output["ClusterNStation10_dt"].fill(dataset=dataset,region=region,
+                                           ClusterNStation10=ak.flatten(dt_cluster[cut].NStation10),
+                                           weight=ak.flatten(w_cls))        
         return output
 
     def postprocess(self, accumulator):

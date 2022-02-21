@@ -72,7 +72,7 @@ signals_muon = {
 }
 data_muon = {
      'Muon_2018D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim/SingleMuon_2018D/HeavyNeutralLepton_Tree_*.root"),
-
+     'WJetsToLNu':glob.glob("/eos/uscms/store/user/lpclonglived/HNL/WJetToLNu_fullGen/HeavyNeutralLepton_Tree_*.root")       ,
 }
 test = {
      "HNL_electronType_mHNL2p0_pl100"    :glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim/HNL_electronType_mHNL2p0_pl100/HeavyNeutralLepton_Tree_1.root"),
@@ -108,5 +108,5 @@ def replaceFilepath(inputjson):
 #writejson(signals,"signals.json")
 #writejson(signals,"signals_skim.json")
 #writejson(signals_muon,"signals_muon.json")
-writejson(data_muon,"data_muon.json")
+writejson(data_muon,"data_muon_with_WJets.json")
 #replacejson("signals.json")

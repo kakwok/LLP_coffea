@@ -482,7 +482,7 @@ class MyProcessor(processor.ProcessorABC):
         for dataset, dataset_sumw in accumulator['sumw'].items():
             if "rwctau" in dataset:
                 ctau    = float(dataset.split("_")[-1].replace("rwctau",""))
-                mass    = dataset.split("_")[2].replace("mHNL","").replace("p0","")
+                mass    = dataset.split("_")[2].replace("mHNL","")
                 xsec    = corrections.reweightXsec(ctau,mass)
                 scale[dataset] = lumi*xsec/dataset_sumw
                 

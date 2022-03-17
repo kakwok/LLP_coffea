@@ -111,7 +111,11 @@ class MyProcessor(processor.ProcessorABC):
                 "RB1":events.cscRechitCluster3_match_RB1_0p4,
                 "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_lep":dphi_cluster_lep,                
-                "dr_cluster_lep":dr_cluster_lep,                
+                "dr_cluster_lep":dr_cluster_lep,
+                "Cluster_match_gParticle_id":events.cscRechitCluster3_match_gParticle_id,
+                "Cluster_match_gParticle_minDeltaR":events.cscRechitCluster3_match_gParticle_minDeltaR,
+                "Cluster_match_gParticle":events.cscRechitCluster3_match_gParticle,
+                "Cluster_match_gParticle_index":events.cscRechitCluster3_match_gParticle_index,
             }
         )
         return cluster
@@ -206,6 +210,8 @@ class MyProcessor(processor.ProcessorABC):
                  "dphi_cluster_MET":events.dtRechitClusterMetEENoise_dPhi,
                  "dphi_cluster_lep":dphi_dt_cluster_lep,
                  "dr_cluster_lep":dr_dt_cluster_lep,
+                 "Cluster_match_gParticle_id":events.dtRechitCluster_match_gParticle_Id,
+                 "Cluster_match_gParticle_minDeltaR":events.dtRechitCluster_match_gParticle_deltaR, 
             }
         )
         return dt_cluster
@@ -295,14 +301,6 @@ class MyProcessor(processor.ProcessorABC):
             & (clusterMasks.timeSpreadCut)
             & (clusterMasks.ClusterID))
 
-        selectionMasks['cls_ABCD_inTimeCR']  = (   ((clusterMasks.jetVeto_mask) &(clusterMasks.muonVeto_mask))
-            & (clusterMasks.ME11_12_veto)
-            &((clusterMasks.MB1seg_veto) & (clusterMasks.RB1_veto))
-            & (clusterMasks.IntimeCut)
-            & (clusterMasks.timeSpreadCut)
-            & (clusterMasks.ClusterID)
-            & (clusterMasks.dphi_MET))
-
         selectionMasks['cls_StatVeto']     =  (clusterMasks.ME11_12_veto)& ((clusterMasks.MB1seg_veto) & (clusterMasks.RB1_veto))     
         selectionMasks['cls_JetMuVeto']    =  (clusterMasks.jetVeto_mask) &(clusterMasks.muonVeto_mask)                
         selectionMasks['cls_JetMuStaVeto'] =( (clusterMasks.jetVeto_mask) &(clusterMasks.muonVeto_mask)
@@ -320,7 +318,6 @@ class MyProcessor(processor.ProcessorABC):
                                             & (dt_clusterMasks.dt_RPC)
                                             & (dt_clusterMasks.dt_MB1adj)
                                             & (dt_clusterMasks.dt_time))
-
         if self.isElectronChannel:
             preselections = ['trigger_ele','MET',"METfilters",'good_lepton']       
         else:
@@ -335,15 +332,13 @@ class MyProcessor(processor.ProcessorABC):
             "ABCD_OOT"     :preselections+["cls_OOT"],
             "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
             "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
-            "ABCD_inTimeCR": preselections+["cls_ABCD_inTimeCR"],
-            "ABCD_dt_inTimeCR" : preselections+["dt_cls_ABCD_inTimeCR"],
             ##"1cls"         :preselections+["n_cls"],            
             #"JetMuVeto"    :preselections+["cls_JetMuVeto"],
             #"JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
             #"StatVeto"     :preselections+["cls_StatVeto"],
             #"noselection":[],
         }
- 
+
         weights = Weights(len(events))
         if not isData:
             corrections.add_pileup_weight(weights, events.npu,'2018')
@@ -419,7 +414,12 @@ class MyProcessor(processor.ProcessorABC):
                                                 ClusterAvgStation10 =np.abs(ak.flatten(cluster[cut].AvgStation10)),
                                                 ClusterNStation10=np.abs(ak.flatten(cluster[cut].NStation10)),
                                                 weight=ak.flatten(w_cls))
-                
+                output["Cluster_match_gParticle_id"].fill(dataset=dataset,region=region,
+                                           Cluster_match_gParticle_id=ak.flatten(cluster[cut].Cluster_match_gParticle_id),
+                                           weight=ak.flatten(w_cls))
+                output["Cluster_match_gParticle_minDeltaR"].fill(dataset=dataset,region=region,
+                                           Cluster_match_gParticle_minDeltaR=ak.flatten(cluster[cut].Cluster_match_gParticle_minDeltaR),
+                                           weight=ak.flatten(w_cls)) 
                 
                 output["ClusterSize"].fill(dataset=dataset,region=region,
                                            ClusterSize=ak.flatten(cluster[cut].size),
@@ -472,7 +472,13 @@ class MyProcessor(processor.ProcessorABC):
                 output["ClusterNStation10_dt"].fill(dataset=dataset,region=region,
                                            ClusterNStation10=ak.flatten(dt_cluster[cut].NStation10),
                                            weight=ak.flatten(w_cls))        
-        return output
+                output["Cluster_match_gParticle_id_dt"].fill(dataset=dataset,region=region,
+                                           Cluster_match_gParticle_id=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_id),
+                                           weight=ak.flatten(w_cls))
+                output["Cluster_match_gParticle_minDeltaR_dt"].fill(dataset=dataset,region=region,
+                                           Cluster_match_gParticle_minDeltaR=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_minDeltaR),
+                                           weight=ak.flatten(w_cls))
+            return output
 
     def postprocess(self, accumulator):
         # set everything to 1/fb scale

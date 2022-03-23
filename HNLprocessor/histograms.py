@@ -1,23 +1,24 @@
 from coffea import hist
 import numpy as np
 
-cutflow_axis =  hist.Bin('cutFlow','cutFlow',20,0,20)
 nMinus1_axis =  hist.Bin('Nminus1','i-th cut',20,0,20)
 dataset_axis = hist.Cat("dataset", "Dataset")
+cutFlow_axis = hist.Cat("cutflow", "cutflow")
 region_axis  = hist.Cat("region", "region")
-
+wpt_axis = hist.Bin("gWPt","W Pt[GeV]",
+            np.array([   0.,    5.,   10.,   15.,   20.,   25.,   30.,   35.,   40.,
+                        45.,   50.,   60.,   70.,   80.,   90.,  100.,  125.,  150.,
+                        200.,  300.,  800., 1500.]))
 histograms ={
+            "cutflow": hist.Hist("Events",dataset_axis, region_axis, cutFlow_axis),
             "nCluster": hist.Hist("Events",dataset_axis, region_axis,
-                hist.Bin("nCluster", "nCluster", 4, 0, 4),
-                cutflow_axis,
+                hist.Bin("nCluster", "nCluster", 4, 0, 4)
             ),                   
             "nCluster_dt": hist.Hist("Events",dataset_axis,region_axis,
-                hist.Bin("nCluster", "nCluster", 4, 0, 4),
-                cutflow_axis,
+                hist.Bin("nCluster", "nCluster", 4, 0, 4)
             ),                   
             "nCluster_n-1": hist.Hist("Events",dataset_axis,                
-                hist.Bin("nCluster", "nCluster", 4, 0, 4),
-                nMinus1_axis,
+                hist.Bin("nCluster", "nCluster", 4, 0, 4)
             ),                   
             "accept": hist.Hist("Events",dataset_axis,                
                 hist.Bin("gLLP_csc", "gLLP_csc", 2, 0, 2),
@@ -99,7 +100,7 @@ histograms ={
             ), 
             "metXYCorr": hist.Hist("Events",dataset_axis,
                 region_axis,                                   
-                hist.Bin("metXYCorr", "metXYCorr", 50, 0, 500),
+                hist.Bin("metXYCorr", r"$E_{T}^{miss}$ [GeV]", 50, 0, 500),
             ),
             "MT": hist.Hist("Events",dataset_axis,                
                 region_axis,                            
@@ -112,12 +113,8 @@ histograms ={
             "nPU_noweight": hist.Hist("Events",dataset_axis,                
                 hist.Bin("nPU", "nPU", 100, 0, 100),
             ),            
-            "gWPt": hist.Hist("Events",dataset_axis,                
-                hist.Bin("gWPt", "gWPt", 50,0,500),
-            ),            
-            "gWPt_noweight": hist.Hist("Events",dataset_axis,                
-                hist.Bin("gWPt", "gWPt", 50,0,500),
-            ),           
+            "gWPt": hist.Hist("Events",dataset_axis, wpt_axis),
+            "gWPt_noweight": hist.Hist("Events",dataset_axis, wpt_axis),           
             ## gen var.
             "glepdPhi": hist.Hist("Events",dataset_axis,                
                 hist.Bin("gLLP_lepdPhi", r'$\Delta\phi$(gLLP,g_lep)', 30, 0,np.pi),
@@ -126,12 +123,40 @@ histograms ={
                 hist.Bin("gLepPt", 'gLepPt', 50, 0,500),
             ),                    
             "gLLP_e": hist.Hist("Events",dataset_axis,                
-                hist.Bin("gLLP_e", 'gLLP_e', 50, 0,500),
+                hist.Bin("gLLP_e", 'LLP energy[GeV]', 50, 0,500),
             ),   
             "gLLP_pt": hist.Hist("Events",dataset_axis,                
-                hist.Bin("gLLP_pt", 'gLLP_pt', 50, 0,500),
+                hist.Bin("gLLP_pt", 'LLP pT[GeV]', 50, 0,500),
             ),   
             "gLLP_eta": hist.Hist("Events",dataset_axis,                
                 hist.Bin("gLLP_eta", 'gLLP_eta', 40, -5,5),
             ),   
+            "llp_cls_z":hist.Hist("Events",hist.Cat("dataset", "Dataset"),                
+                hist.Bin("llp_z", "LLP decay Z[cm]", 40, 570, 1050),                    
+                hist.Bin("cluster_z", "cluster Z[cm]", 40, 570, 1050),                                                         
+            ), 
+            "llp_cls_eff_z":hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Bin("selection",'pass/fail', 2,0,2),
+                hist.Bin("z", "LLP decay Z[cm]", 40, 570, 1050),
+            ),
+            "llp_cls_eff_r":hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Bin("selection",'pass/fail', 2,0,2),
+                hist.Bin("r", "LLP decay R[cm]", 20, 100, 700),
+            ),
+            "llp_cls_eff_e":hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Bin("selection",'pass/fail', 2,0,2),
+                hist.Bin("e", "LLP E[GeV]", 20, 0, 250),
+            ),
+            "llp_cls_dt_eff_z":hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Bin("selection",'pass/fail', 2,0,2),
+                hist.Bin("z", "LLP decay Z[cm]", 35, 0, 700),
+            ),
+            "llp_cls_dt_eff_r":hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Bin("selection",'pass/fail', 2,0,2),
+                hist.Bin("r", "LLP decay R[cm]", 40, 300, 700),
+            ),
+            "llp_cls_dt_eff_e":hist.Hist("Events",hist.Cat("dataset", "Dataset"),
+                hist.Bin("selection",'pass/fail', 2,0,2),
+                hist.Bin("e", "LLP E[GeV]", 20, 0, 250),
+            ),
 }

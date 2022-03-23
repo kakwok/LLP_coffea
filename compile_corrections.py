@@ -57,15 +57,19 @@ corrections['2018_pileupweight'] = pileup_corr
 corrections['2018_pileupweight_puUp'] = pileup_corr_puUp
 corrections['2018_pileupweight_puDown'] = pileup_corr_puDown
 
-with uproot.open("./metadata/WPT.root") as f:
-    wpt_LO = f['Wpt']
+#with uproot.open("./metadata/WPT.root") as f:
+#    wpt_LO = f['Wpt']
+with uproot.open("./metadata/WPT_v2.root") as f:
+    wpt_LO_HNL = f['h_HNL']
+    wpt_LO_WJ  = f['h_WJ']
 with uproot.open("./metadata/wp-13tev-cms.root") as f:
     wpt_NLO = f['s_qt']
 
 wpt_NLO_normalized = wpt_NLO.values/wpt_NLO.values.sum()
 
-ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
-corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized[ptrange] /wpt_LO.values[ptrange] , wpt_LO.edges[ptrange])
+#ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
+corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_HNL.values , wpt_LO_HNL.edges)
+corrections['wpt_WJ'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_WJ.values , wpt_LO_WJ.edges)
 
 def read_xsections(filename):
     out = {}

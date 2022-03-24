@@ -38,8 +38,9 @@ def buildMask(allMasks,cutnames):
     return allcuts
 
 class MyProcessor(processor.ProcessorABC):
-    def __init__(self,isElectronChannel=True,debug=False, ):
+    def __init__(self,isElectronChannel=True,saveSkim=False,debug=False):
         self._debug = debug
+        self._saveSkim = saveSkim
         self.isElectronChannel = isElectronChannel
         self.isMuonChannel = not(isElectronChannel)
         ##define histograms 
@@ -82,7 +83,17 @@ class MyProcessor(processor.ProcessorABC):
             'ctau':events.gLLP_ctau,
         }) 
         return llp 
-     
+    def buildGenParticles(self,events):
+        gParticle = ak.zip({
+            "E":events.gParticleE,
+            "Eta":events.gParticleEta,
+            "Phi":events.gParticlePhi,    
+            "Id":events.gParticleId,
+            "MotherId":events.gParticleMotherId,
+            "Pt":events.gParticlePt,
+            "Status":events.gParticleStatus,
+        })
+        return gParticle
         
     def buildCSCcluster(self, events,good_lep):
         cluster_dir= ak.zip(
@@ -281,6 +292,7 @@ class MyProcessor(processor.ProcessorABC):
         llp      = self.buildLLP(events)
         good_lep,ele,muons = self.buildGoodLeptons(events) 
         cluster = self.buildCSCcluster(events,good_lep)        
+        gParticle = self.buildGenParticles(events)        
         dt_cluster = self.buildDTcluster(events,good_lep)        
 
         clusterMasks = self.selectCSCcluster(cluster,events) 
@@ -497,6 +509,16 @@ class MyProcessor(processor.ProcessorABC):
         for i,sel in enumerate(DT_sel_ABCD):
             allcuts= ak.any( (buildMask(dt_clusterMasks,DT_sel_ABCD[0:i+1]) & allPreSel_dt), axis=1)     ## select all cuts up to this cut
             output['cutflow'].fill(dataset=dataset,region="dt_cutflow",cutflow=sel,weight=weights.weight()[allcuts])
+
+        if self._saveSkim:
+            #cut = ak.any(buildMask(selectionMasks,regions["ABCD"]),axis=1)
+            cut = selectionMasks["Acceptance_csc"]
+            fout = uproot.recreate('./skim.root')
+            #fout["MuonSystem"] = {"cluster":cluster[cut],"gParticle":gParticle[cut],"llp":llp[cut],'lep':good_lep[cut]}
+            #if ak.any(cut,axis=0):
+                #fout["MuonSystem"] = {"cluster":cluster[cut],"gParticle":gParticle[cut],'lep':good_lep[cut]}
+            fout["MuonSystem"] = {"cluster":cluster[:20],"gParticle":gParticle[:20]}
+            fout.close()
 
         return output
 

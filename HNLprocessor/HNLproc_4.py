@@ -7,6 +7,7 @@ import uproot
 from coffea.nanoevents.methods import candidate
 from coffea.nanoevents.methods import vector
 from coffea.nanoevents import NanoEventsFactory, BaseSchema, TreeMakerSchema
+import time
 
 from coffea.analysis_tools import Weights, PackedSelection
 
@@ -15,8 +16,27 @@ from  HNLprocessor.histograms import histograms
 import warnings
 import pickle
 import glob
+import os
+import XRootD
+import XRootD.client
+
 
 ak.behavior.update(candidate.behavior)
+
+def uproot_writeable(events, keys):
+    ev = {}
+    for bname in keys:
+        if not events[bname].fields:
+            ev[bname] = ak.packed(ak.without_parameters(events[bname]))
+        else:
+            ev[bname] = ak.zip(
+                {
+                    n: ak.packed(ak.without_parameters(events[bname][n]))
+                    for n in events[bname].fields
+                    if is_rootcompat(events[bname][n])
+                }
+            )
+    return ev
 
 
 def maskAndFill(denom,selection,value):
@@ -267,9 +287,9 @@ class MyProcessor(processor.ProcessorABC):
         output = self.accumulator.identity()  ## get from histograms
         dataset = events.metadata['dataset']        
         
-        start,stop = events._branchargs['entry_start'],events._branchargs['entry_stop']
-        events = uproot.lazy(events._tree)
-        events = events[start:stop]
+        #start,stop = events._branchargs['entry_start'],events._branchargs['entry_stop']
+        #events = uproot.lazy(events._tree)
+        #events = events[start:stop]
                 
         isSignal= ak.any(events.gLLP_csc)        
         isData = not(ak.any(events.gLLP_e) or ak.any(events.gLepE))
@@ -512,13 +532,48 @@ class MyProcessor(processor.ProcessorABC):
 
         if self._saveSkim:
             #cut = ak.any(buildMask(selectionMasks,regions["ABCD"]),axis=1)
-            cut = selectionMasks["Acceptance_csc"]
-            fout = uproot.recreate('./skim.root')
+            #cut = selectionMasks["Acceptance_csc"]
             #fout["MuonSystem"] = {"cluster":cluster[cut],"gParticle":gParticle[cut],"llp":llp[cut],'lep':good_lep[cut]}
-            #if ak.any(cut,axis=0):
-                #fout["MuonSystem"] = {"cluster":cluster[cut],"gParticle":gParticle[cut],'lep':good_lep[cut]}
-            fout["MuonSystem"] = {"cluster":cluster[:20],"gParticle":gParticle[:20]}
-            fout.close()
+            #fout["MuonSystem"] = {"cluster":cluster[cut],"gParticle":gParticle[cut],'lep':good_lep[cut]}
+            #fout["MuonSystem"] = {"cluster":cluster[:20],"gParticle":gParticle[:20]}
+            #fout.close()
+            filename = dataset + "_skim_" + str(time.time()) + ".root"
+            destination = "root://cmseos.fnal.gov//store/user/kkwok/llp/HNL/skim/"
+
+            cut = ak.any(
+                    buildMask(selectionMasks,regions["ABCD"]) 
+                    ,axis=1)
+            #cut = cut | ak.any(buildMask(selectionMasks,regions["ABCD_dt"]),axis=1)
+            #cut = selectionMasks['n_cls']
+            if ak.any(cut,axis=0):
+                print("Found events pass skim cut, writing out")
+                with uproot.recreate(filename) as fout:
+                    #fout["MuonSystem"] = uproot_writeable(events[cut], events.fields)    # TODO: find out why we can't write all event fields
+                    fout["MuonSystem"] = {"cluster":cluster[cut],"dt_cluster":dt_cluster[cut],"gParticle":gParticle[cut]}
+            
+                copyproc = XRootD.client.CopyProcess()
+                copyproc.add_job(source = os.path.abspath(os.path.join(".", filename)),
+                                 target = (destination + f"/{filename}"), force=True)
+                copyproc.prepare()
+                print("Copying skim output to  ...",destination )
+                copyproc.run()
+                client = XRootD.client.FileSystem("root://cmseos.fnal.gov/")
+                status = client.locate(
+                    "/store/user/kkwok/llp/HNL/skim/"+filename,
+                    XRootD.client.flags.OpenFlags.READ,
+                )
+                assert status[0].ok
+                del client
+                del copyproc
+                
+                try:
+                    os.remove(os.path.abspath(os.path.join(".", filename)))
+                    print("% s removed successfully" % os.path.abspath(os.path.join(".", filename)))
+                except OSError as error:
+                    print(error)
+                    print("File path can not be removed")
+            else:
+                print("No events pass skim cut")
 
         return output
 

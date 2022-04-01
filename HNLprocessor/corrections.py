@@ -33,15 +33,18 @@ def add_pileup_weight(weights, nPU, year='2017', dataset=None):
         )
 
 def add_Wpt_kfactor(weights, gWPt, dataset):
-    if dataset=="WJetsToLNu" or dataset=="HNL,$m_N$=5" or "HNL" in dataset:
-        #print("Adding WpT weight")
+    if dataset=="HNL,$m_N$=5" or "HNL" in dataset :
         weights.add("Wpt", compiled["wpt"](gWPt))
-    else:
+    elif dataset=="WJetsToLNu" or  "WJets" in dataset:
+        weights.add("Wpt", compiled["wpt_WJ"](gWPt))
         return
 
 def add_ctau_weight(weights,llp_ctau, ctau_old, ctau_new):
     #print("Adding ctau weight")
-    weights.add("ctau",ak.firsts(np.exp(llp_ctau * (1/ctau_old-1/ctau_new))*(ctau_old/ctau_new)))
+    w_ctau  =  ak.firsts(np.exp(llp_ctau * (1/ctau_old-1/ctau_new))*(ctau_old/ctau_new))
+    if ak.any(np.isnan(w_ctau)):
+        w_ctau=ak.nan_to_num(w_ctau,nan=0)  ## zero out nan weights
+    weights.add("ctau",w_ctau)
     return
 
 def add_nCluster_weight(weights,name, n_cluster, cls_eff_ratio=1):

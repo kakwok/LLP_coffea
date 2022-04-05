@@ -110,8 +110,12 @@ class MyProcessor(processor.ProcessorABC):
             "Phi":events.gParticlePhi,    
             "Id":events.gParticleId,
             "MotherId":events.gParticleMotherId,
+            "MotherIndex":events.gParticleMotherIndex,
             "Pt":events.gParticlePt,
             "Status":events.gParticleStatus,
+            "ProdVertexX":events.gParticleProdVertexX,
+            "ProdVertexY":events.gParticleProdVertexY,
+            "ProdVertexZ":events.gParticleProdVertexZ,
         })
         return gParticle
         
@@ -153,6 +157,10 @@ class MyProcessor(processor.ProcessorABC):
                 "RE12":events.cscRechitCluster3_match_RE12_0p4,
                 "MB1seg":events.cscRechitCluster3_match_MB1Seg_0p4,
                 "RB1":events.cscRechitCluster3_match_RB1_0p4,
+                'MuonVetoPt':events.cscRechitCluster3MuonVetoPt,
+                'MuonVetoEta':events.cscRechitCluster3MuonVetoEta,
+                'JetVetoPt':events.cscRechitCluster3JetVetoPt,
+                'JetVetoEta':events.cscRechitCluster3JetVetoEta,
                 "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_lep":dphi_cluster_lep,                
                 "dr_cluster_lep":dr_cluster_lep,                
@@ -312,7 +320,8 @@ class MyProcessor(processor.ProcessorABC):
         llp      = self.buildLLP(events)
         good_lep,ele,muons = self.buildGoodLeptons(events) 
         cluster = self.buildCSCcluster(events,good_lep)        
-        gParticle = self.buildGenParticles(events)        
+        if self._saveSkim:
+            gParticle = self.buildGenParticles(events)        
         dt_cluster = self.buildDTcluster(events,good_lep)        
 
         clusterMasks = self.selectCSCcluster(cluster,events) 
@@ -382,8 +391,9 @@ class MyProcessor(processor.ProcessorABC):
                 corrections.add_ctau_weight(weights, llp.ctau, ctau_old, ctau_new)
             pass
 
-        #print(dataset)
-        #print("Weight statistics: %r" % weights.weightStatistics) 
+        if self._debug:
+            print(dataset)
+            print("Weight statistics: %r" % weights.weightStatistics) 
 
         ## Fill no selection plots
         output['nLeptons'].fill(dataset=dataset, nLeptons = events.nLeptons, weight=weights.weight())
@@ -405,12 +415,16 @@ class MyProcessor(processor.ProcessorABC):
                                   gLLP_csc=ak.firsts(events.gLLP_csc),
                                   gLLP_dt=gLLP_dt,weight=weights.weight()) ## only 1 LLP
             cut = selectionMasks["Acceptance_csc"]
-            output['gLLP_e'].fill(dataset=dataset,gLLP_e = ak.firsts(llp[cut].e) , weight=weights.weight()[cut])
-            output['gLLP_pt'].fill(dataset=dataset,gLLP_pt = ak.firsts(llp[cut].pt), weight=weights.weight()[cut])
-            output['gLLP_eta'].fill(dataset=dataset,gLLP_eta = ak.firsts(llp[cut].eta), weight=weights.weight()[cut])
-            output['glepdPhi'].fill(dataset=dataset,gLLP_lepdPhi = np.abs(ak.flatten(events[cut].gLLP_lepdPhi)), weight=weights.weight()[cut])
+            output['gLLP_e'].fill(dataset=dataset  ,region="gLLP_csc" ,gLLP_e = ak.firsts(llp[cut].e) , weight=weights.weight()[cut])
+            output['gLLP_pt'].fill(dataset=dataset ,region="gLLP_csc" ,gLLP_pt = ak.firsts(llp[cut].pt), weight=weights.weight()[cut])
+            output['gLLP_eta'].fill(dataset=dataset,region="gLLP_csc" ,gLLP_eta = ak.firsts(llp[cut].eta), weight=weights.weight()[cut])
+            output['glepdPhi'].fill(dataset=dataset,region="gLLP_csc" ,gLLP_lepdPhi = np.abs(ak.flatten(events[cut].gLLP_lepdPhi)), weight=weights.weight()[cut])
             output["metXYCorr"].fill(dataset=dataset,region="gLLP_csc",metXYCorr=events[cut].metXYCorr,weight=weights.weight()[cut]) 
             cut = selectionMasks["Acceptance_dt"]
+            output['gLLP_e'].fill(dataset=dataset  ,region="gLLP_dt" ,gLLP_e = ak.firsts(llp[cut].e) , weight=weights.weight()[cut])
+            output['gLLP_pt'].fill(dataset=dataset ,region="gLLP_dt" ,gLLP_pt = ak.firsts(llp[cut].pt), weight=weights.weight()[cut])
+            output['gLLP_eta'].fill(dataset=dataset,region="gLLP_dt" ,gLLP_eta = ak.firsts(llp[cut].eta), weight=weights.weight()[cut])
+            output['glepdPhi'].fill(dataset=dataset,region="gLLP_dt" ,gLLP_lepdPhi = np.abs(ak.flatten(events[cut].gLLP_lepdPhi)), weight=weights.weight()[cut])
             output["metXYCorr"].fill(dataset=dataset,region="gLLP_dt",metXYCorr=events[cut].metXYCorr,weight=weights.weight()[cut]) 
 
             ## get CSC cluster masks
@@ -537,17 +551,20 @@ class MyProcessor(processor.ProcessorABC):
             #fout["MuonSystem"] = {"cluster":cluster[cut],"gParticle":gParticle[cut],'lep':good_lep[cut]}
             #fout["MuonSystem"] = {"cluster":cluster[:20],"gParticle":gParticle[:20]}
             #fout.close()
-            filename = dataset + "_skim_" + str(time.time()) + ".root"
+            if self.isElectronChannel: channel ="ele_"
+            else: channel ="muon_"
+            filename = dataset + "_skim_"+channel + str(time.time()) + ".root"
             destination = "root://cmseos.fnal.gov//store/user/kkwok/llp/HNL/skim/"
 
             cut = ak.any(
                     buildMask(selectionMasks,regions["ABCD"]) 
                     ,axis=1)
-            #cut = cut | ak.any(buildMask(selectionMasks,regions["ABCD_dt"]),axis=1)
-            #cut = selectionMasks['n_cls']
+            cut = cut | ak.any(buildMask(selectionMasks,regions["ABCD_dt"]),axis=1)
             if ak.any(cut,axis=0):
                 print("Found events pass skim cut, writing out")
                 with uproot.recreate(filename) as fout:
+                    cluster['passABCD'] =  buildMask(selectionMasks,regions["ABCD"])
+                    dt_cluster['passABCD_dt'] =  buildMask(selectionMasks,regions["ABCD_dt"])
                     #fout["MuonSystem"] = uproot_writeable(events[cut], events.fields)    # TODO: find out why we can't write all event fields
                     fout["MuonSystem"] = {"cluster":cluster[cut],"dt_cluster":dt_cluster[cut],"gParticle":gParticle[cut]}
             

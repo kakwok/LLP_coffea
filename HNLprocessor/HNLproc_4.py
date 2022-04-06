@@ -192,8 +192,8 @@ class MyProcessor(processor.ProcessorABC):
         ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==3) & (abs(cluster.eta)<1.6))|\
         ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==2) & (abs(cluster.eta)<1.6))
         
-        muonVeto_mask = ~((muVeto.pt>20) & abs(muVeto.eta<2.4))
-        jetVeto_mask  = ~((jetVeto.pt>10)& abs(jetVeto.eta<2.4))
+        muonVeto = ~((muVeto.pt>20) & abs(muVeto.eta<2.4))
+        jetVeto  = ~((jetVeto.pt>10)& abs(jetVeto.eta<2.4))
         RE12_veto     = (cluster.RE12==0)
         MB1seg_veto   = (cluster.MB1seg==0)
         RB1_veto      = (cluster.RB1==0)
@@ -208,8 +208,8 @@ class MyProcessor(processor.ProcessorABC):
 
         clusterMasks = ak.zip({
             "ClusterID"     : ClusterID     ,  
-            "muonVeto_mask" : muonVeto_mask ,
-            "jetVeto_mask"  : jetVeto_mask  ,
+            "muonVeto" : muonVeto ,
+            "jetVeto"  : jetVeto  ,
             "RE12_veto"     : RE12_veto     ,
             "MB1seg_veto"   : MB1seg_veto   ,
             "RB1_veto"      : RB1_veto      ,
@@ -340,25 +340,25 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['n_cls']        =ak.num(cluster,axis=1)>=1
         selectionMasks['n_cls_dt']     =ak.num(dt_cluster,axis=1)>=1
 
-        CSC_sel_ABCD = ["jetVeto_mask","muonVeto_mask","ME11_12_veto","MB1seg_veto","RB1_veto",
+        CSC_sel_ABCD = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto",
                         "IntimeCut","timeSpreadCut","ClusterID"]
-        CSC_sel_OOT  = ["jetVeto_mask","muonVeto_mask","ME11_12_veto","MB1seg_veto","RB1_veto",
+        CSC_sel_OOT  = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto",
                         "OOT_timeCut","timeSpreadCut","ClusterID"]
 
         selectionMasks['cls_ABCD']  = buildMask(clusterMasks,CSC_sel_ABCD)
         selectionMasks['cls_OOT']   = buildMask(clusterMasks,CSC_sel_OOT)
 
-        selectionMasks['cls_StatVeto']     =  (clusterMasks.ME11_12_veto)& ((clusterMasks.MB1seg_veto) & (clusterMasks.RB1_veto))     
-        selectionMasks['cls_JetMuVeto']    =  (clusterMasks.jetVeto_mask) &(clusterMasks.muonVeto_mask)                
-        selectionMasks['cls_JetMuStaVeto'] =( (clusterMasks.jetVeto_mask) &(clusterMasks.muonVeto_mask)
-                                            & (clusterMasks.ME11_12_veto)
-                                            &((clusterMasks.MB1seg_veto) & (clusterMasks.RB1_veto)))
+        selectionMasks['cls_StatVeto']     =  buildMask(clusterMasks,['ME11_12_veto','MB1seg_veto','RB1_veto'])     
+        selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
+        selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto'])
 
-        DT_sel_OOT  = ["dt_jetVeto","dt_muonVeto","dt_MB1veto","dt_RPC","dt_MB1adj","dt_OOT"]
-        DT_sel_ABCD = ["dt_jetVeto","dt_muonVeto","dt_MB1veto","dt_RPC","dt_MB1adj","dt_time"]
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
+        DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj"]
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         
+        selectionMasks['dt_JetMuStaVeto'] =  buildMask(dt_clusterMasks,DT_sel_vetos)
 
         if self.isElectronChannel:
             preselections = ['trigger_ele','MET',"METfilters",'good_lepton']       
@@ -368,13 +368,14 @@ class MyProcessor(processor.ProcessorABC):
         regions = {
             "PreSel"       :preselections,            
             #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
+            "JetMuVeto"    :preselections+["cls_JetMuVeto"],
+            "JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
             "ABCD"         :preselections+["cls_ABCD"],            
             "ABCD_OOT"     :preselections+["cls_OOT"],
             "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
             "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
+            "JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
             ##"1cls"         :preselections+["n_cls"],            
-            #"JetMuVeto"    :preselections+["cls_JetMuVeto"],
-            #"JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
             #"StatVeto"     :preselections+["cls_StatVeto"],
             #"noselection":[],
         }

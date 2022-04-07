@@ -3,8 +3,9 @@ from optparse import OptionParser
 import coffea
 import pickle,glob
 import time
+from coffea.nanoevents import NanoEventsFactory, BaseSchema
 
-def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=False,saveSkim=False):
+def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=False,saveSkim=False,debug=False):
     #from HNLprocessor.HNLproc_3 import MyProcessor
     from HNLprocessor.HNLproc_4 import MyProcessor
 
@@ -12,10 +13,10 @@ def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=
         out = processor.run_uproot_job(
             fileset,
             treename="MuonSystem",
-            processor_instance=MyProcessor(isElectronChannel,saveSkim),
+            processor_instance=MyProcessor(isElectronChannel,saveSkim,debug),
             executor=processor.iterative_executor,
             executor_args={
-                "schema": None,
+                "schema": BaseSchema,
             },
             chunksize=10000,
         )
@@ -23,10 +24,10 @@ def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=
         out = processor.run_uproot_job(
             fileset,
             treename="MuonSystem",
-            processor_instance=MyProcessor(isElectronChannel,saveSkim),
+            processor_instance=MyProcessor(isElectronChannel,saveSkim,debug),
             executor=processor.iterative_executor,
             executor_args={
-                "schema": None,
+                "schema": BaseSchema,
             },
             maxchunks = 2,
             chunksize=100,
@@ -52,7 +53,7 @@ def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,nJobs=4
     exe_args = {
         "client": client,
         "savemetrics": True,
-        "schema": None,
+        "schema": BaseSchema,
         "align_clusters": True,
     }
 
@@ -70,8 +71,7 @@ def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,nJobs=4
         processor_instance=MyProcessor(isElectronChannel,saveSkim),
         executor=processor.dask_executor,
         executor_args=exe_args,
-        # remove this to run on the whole fileset:
-        #maxchunks=10,
+        chunksize=10000,
     )
 
 
@@ -94,6 +94,7 @@ if __name__ == '__main__':
     parser.add_option('--muon', dest='muon', action='store_true',default = False, help='Run muon channel')
     parser.add_option('--full', dest='full', action='store_true',default = False, help='Run full file chunks')
     parser.add_option('--saveSkim', dest='saveSkim', action='store_true',default = False, help='Save skim selections')
+    parser.add_option('--debug', dest='debug', action='store_true',default = False, help='run with debug')
     parser.add_option('--fileset', dest='fileset', default = "test.json", help='input file json')
     parser.add_option('--nJobs', dest='nJobs', default = 4, type=int, help='number of workers in condor')
     parser.add_option('-o', dest='outf', default='HNL_histograms.pickle', help='collection of histograms')
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         runLocal("test.pickle","test.json",isElectronChannel)
     elif options.local:
         print("full               = ", options.full)
-        runLocal(outf,fileset,isElectronChannel,options.full,saveSkim)
+        runLocal(outf,fileset,isElectronChannel,options.full,saveSkim,options.debug)
     elif options.condor:
         print(" Using nJobs       = ", options.nJobs)
         runLPC(outf,fileset,isElectronChannel,options.nJobs,saveSkim)

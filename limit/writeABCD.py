@@ -200,7 +200,7 @@ def predIntimeFromOOT(h,size,dphi_lep,dphi_met,isSignal=False,kfactor=0.25,lumi=
  
     return N_evts, N_evts_unc
 
-def writeYields(cut = None,muon=True,outf="yields.json",debug=True):
+def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None):
     from coffea import hist
     if cut==None:
         ## nHit, dphi_lep, dphi_MET
@@ -225,9 +225,12 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True):
     for k,v in data.items():
        v['DT'] = v['DT'].tolist()
        v['CSC'] = v['CSC'].tolist()
-
+       v['CSC_unc'] = v['CSC_unc'].tolist()
+       v['DT_unc'] = v['DT_unc'].tolist()
     with open(outf,"w") as f:
        f.write(json.dumps(data,indent=4))
+    if shifts is not None:
+        shiftYields(outf,shifts)
     return 
 
 def loadbkg(fin='../HNL_histograms_Feb3_electrons.pickle',muon=False,cut=None,debug=True):
@@ -274,7 +277,7 @@ def loadbkg(fin='../HNL_histograms_Feb3_electrons.pickle',muon=False,cut=None,de
         print("bkg DT = " ,DT)
         print("bkg DTunc = ", DT_unc)
     data={}
-    data["bkg"] = {"CSC":CSC,"DT":DT,"norm":1}
+    data["bkg"] = {"CSC":CSC,"DT":DT,"CSC_unc":CSC_unc,"DT_unc":DT_unc,"norm":1}
     return data 
 
 
@@ -340,7 +343,8 @@ def loadhist(fin='../HNL_histograms_Feb23_muons_signal.pickle',muon=True,cut=Non
             print(signal_name," CSCunc = " ,CSC_unc)
             print(signal_name," DT = " ,DT)
             print(signal_name," DTunc = ", DT_unc)
-        data[sample_name] = {"CSC":CSC,"DT":DT,"norm":1}
+        #data[sample_name] = {"CSC":CSC,"DT":DT,"norm":1}
+        data[sample_name] = {"CSC":CSC,"DT":DT,"CSC_unc":CSC_unc,"DT_unc":DT_unc,"norm":1}
               
     return data 
 
@@ -401,7 +405,63 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             Run(cmd,test)
             Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_comb",outdir),test)
                
+import sys
+sys.path.insert(0,"../")
+from HNLprocessor.util import f_1m
 
+def f_xsec(m):
+    def xsec_m(x):
+        return f_1m(m)/(x/1000.)
+    return xsec_m 
+
+# Find the corresponding yield of (m,ct)-> (m,xx)
+def shift_ctau(N_yield,m_old,ct_old,m_new):
+    ct_new = (m_new/m_old) * ct_old
+    return N_yield * f_xsec(m_new)(ct_new)/f_xsec(m_old)(ct_old)
+
+# shift yielsd in f_yield.json according to shifts[{"m_src":int,"m_target":int}]
+def shiftYields(f_yield,shifts):
+    ## init
+    for shift in shifts:
+        shift['CSC_target']=[]
+        shift['DT_target']=[]
+        shift['CSC_unc_target']=[]
+        shift['DT_unc_target']=[]
+        shift['names']=[]
+    with open(f_yield,'r') as f:
+        data = json.load(f)
+        for name,signal in data.items():
+            if name=="bkg": continue
+            m =float(name.split("_")[-2].replace("mHNL","").replace("p","."))
+            ct =float(name.split("_")[-1].replace("pl",""))    
+            for shift in shifts:
+                if m==shift["m_src"]:     
+                    ct_new = (shift['m_target']/m) * ct            
+                    shift["CSC_target"].append(shift_ctau(np.array(signal['CSC']),m,ct,shift['m_target']))            
+                    shift["DT_target"].append(shift_ctau(np.array(signal['DT']),m,ct,shift['m_target']))                        
+                    shift["CSC_unc_target"].append(shift_ctau(np.array(signal['CSC_unc']),m,ct,shift['m_target']))            
+                    shift["DT_unc_target"].append(shift_ctau(np.array(signal['DT_unc']),m,ct,shift['m_target']))                        
+                    m_src = str(shift["m_src"]).replace(".","p")
+                    m_tar = str(shift["m_target"]).replace(".","p") 
+                    ct_src = name.split("_")[-1]
+                    ct_tar = "pl"+str(int(ct_new))
+                    shift["names"].append(name.replace(m_src,m_tar).replace(ct_src,ct_tar))
+    for shift in shifts:
+        if len(shift['names'])>0:
+            for i,name in enumerate(shift['names']):
+                data[name]={
+                    "CSC":shift["CSC_target"][i].tolist(),
+                    "DT":shift["DT_target"][i].tolist(),  
+                    "CSC_unc":shift["CSC_unc_target"][i].tolist(),
+                    "DT_unc":shift["DT_unc_target"][i].tolist(),  
+                    "norm":1,
+                }  
+        else:
+            print("Cannot find source data of mass = ",shift['m_src'])
+
+    with open(f_yield,'w') as f:
+        f.write(json.dumps(data,indent=4)) 
+    return 
 
 if __name__ == "__main__":
 
@@ -467,8 +527,12 @@ if __name__ == "__main__":
         cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(130,dphi_lepcuts[-4],None)}
         isMuon=False
         f_yield = outdir+"yields.json"
-        if options.writeYields: writeYields(cut,isMuon,f_yield,False) 
-        else: makeAllcards(f_yield,outdir)
+        shifts = [
+            {"m_src":4.0,"m_target":3.0},
+            {"m_src":4.0,"m_target":3.5},
+        ]
+        if options.writeYields: writeYields(cut,isMuon,f_yield,False,shifts) 
+        else:   makeAllcards(f_yield,outdir)
         #########################################
         #########################################
         #outdir = "./combine/HNL_datacards/muon_v3/"
@@ -493,5 +557,5 @@ if __name__ == "__main__":
         isMuon=True
 
         f_yield = outdir+"yields.json"
-        if options.writeYields: writeYields(cut,isMuon,f_yield,False) 
-        else: makeAllcards(f_yield,outdir)
+        if options.writeYields: writeYields(cut,isMuon,f_yield,False,shifts) 
+        else:            makeAllcards(f_yield,outdir)

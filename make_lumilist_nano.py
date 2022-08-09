@@ -17,7 +17,7 @@ samples = {}
 for era in "A":
     lines  = subprocess.getoutput(
           #'ls /uscms/home/kkwok/eos/llp/SingleMu_2017B/HeavyNeutralLepton_Tree_0.root'
-          'ls /uscms/home/kkwok/lpclonglived/HNL/EGamma_2018A/HeavyNeutralLepton_Tree_*.root'
+          'ls /uscms/home/kkwok/lpclonglived/HNL/RPC_study/Zmu_2017*/HeavyNeutralLepton_Tree_*.root'
           #'find s /eos/uscms/store/user/lpcbacon/15/JetHTRun2018%s*/*.root -not -empty -ls '%era
           ).split('\n')
     flist = [l.split()[-1] for l in lines]
@@ -28,8 +28,8 @@ for era in "A":
 treename = "MuonSystem"
 
 #lumivalues = lumi_tools.LumiData("metadata/lumi2016_new.csv")
-#lumivalues = lumi_tools.LumiData("metadata/lumi2017.csv.gz")
-lumivalues = lumi_tools.LumiData("metadata/lumi2018.csv")
+lumivalues = lumi_tools.LumiData("metadata/lumi2017.csv.gz")
+#lumivalues = lumi_tools.LumiData("metadata/lumi2018.csv")
 runs  = lumivalues._lumidata[:, 0].astype('u4')
 lumis = lumivalues._lumidata[:, 1].astype('u4')
 ll = lumi_tools.LumiList(runs,lumis)

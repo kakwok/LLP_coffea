@@ -111,28 +111,41 @@ def calSigal():
     #"HNL_muonType_mHNL5p0_pl800": {'CSC': np.array([0.05533046, 0.12587289, 1.68748153, 0.65352   ]), 'DT': np.array([0.08575991, 0.12676015, 1.48230975, 0.84895672]), 'norm': 1},
     #"HNL_muonType_mHNL5p0_pl1000": {'CSC': np.array([0.03866598, 0.0936598 , 1.27124608, 0.48186906]), 'DT': np.array([0.06364373, 0.09759387, 1.16621215, 0.65594387]), 'norm': 1},
     #"HNL_muonType_mHNL5p0_pl5000": {'CSC': np.array([0.00184826, 0.00352256, 0.09103392, 0.0386287 ]), 'DT': np.array([0.00481397, 0.00941965, 0.10353558, 0.04951436]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl115" :{'CSC': np.array([0.42879209, 0.3762481 , 3.0044719 , 2.24811973]), 'DT': np.array([0.39118953, 0.37494761, 0.84560046, 0.47963797]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl118" :{'CSC': np.array([0.377185  , 0.33096492, 2.64286999, 1.97754826]), 'DT': np.array([0.34410808, 0.32982095, 0.74382858, 0.42191135]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl1150":{'CSC': np.array([0.04855612, 0.09838235, 1.67006573, 0.6044162 ]), 'DT': np.array([0.07259159, 0.14239572, 1.4470393 , 0.75918659]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl1175":{'CSC': np.array([0.04271217, 0.08654159, 1.4690657 , 0.53167195]), 'DT': np.array([0.06385486, 0.12525775, 1.27288152, 0.66781502]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl1725":{'CSC': np.array([0.02424095, 0.05223031, 0.89146583, 0.31413251]), 'DT': np.array([0.03796545, 0.07802325, 0.80362061, 0.41447018]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl1762":{'CSC': np.array([0.02132344, 0.04594415, 0.78417385, 0.27632523]), 'DT': np.array([0.03339614, 0.06863279, 0.7069012 , 0.3645868 ]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl230" :{'CSC': np.array([0.3827744 , 0.45937912, 5.93607324, 2.72403154]), 'DT': np.array([0.36235956, 0.46072699, 3.07829464, 1.90655272]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl235" :{'CSC': np.array([0.33670576, 0.40409074, 5.22163972, 2.39618191]), 'DT': np.array([0.31874794, 0.4052764 , 2.70780783, 1.6770904 ]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl2300":{'CSC': np.array([0.01447597, 0.0322255 , 0.55059505, 0.19127802]), 'DT': np.array([0.02324198, 0.04897345, 0.50595518, 0.25864986]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl2350":{'CSC': np.array([0.01273373, 0.02834701, 0.48432842, 0.16825684]), 'DT': np.array([0.0204447 , 0.04307927, 0.44506116, 0.22752017]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl575" :{'CSC': np.array([0.14026825, 0.24188493, 3.95004652, 1.53426805]), 'DT': np.array([0.18521835, 0.32037775, 3.02290337, 1.66278714]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl588" :{'CSC': np.array([0.12338633, 0.21277298, 3.47464039, 1.34961189]), 'DT': np.array([0.16292648, 0.28181882, 2.65908315, 1.46266312]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl920" :{'CSC': np.array([0.06972447, 0.13529572, 2.2811553 , 0.84124746]), 'DT': np.array([0.10088035, 0.19147155, 1.91720801, 1.01835827]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl940" :{'CSC': np.array([0.06133281, 0.11901226, 2.00660785, 0.73999949]), 'DT': np.array([0.08873894, 0.16842708, 1.68646328, 0.8957942 ]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl57"  :{'CSC': np.array([0.22627883, 0.17901991, 0.49960402, 0.53858871]), 'DT': np.array([0.16252238, 0.12591116, 0.05229486, 0.02524263]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl59"  :{'CSC': np.array([0.19904514, 0.15747405, 0.43947439, 0.4737671 ]), 'DT': np.array([0.14296207, 0.11075718, 0.04600093, 0.02220456]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl92"  :{'CSC': np.array([0.38749644, 0.31375008, 1.96933395, 1.64324344]), 'DT': np.array([0.3048243 , 0.28884695, 0.42424859, 0.23745655]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl94"  :{'CSC': np.array([0.34085948, 0.27598883, 1.73231562, 1.44547159]), 'DT': np.array([0.2681373 , 0.2540829 , 0.37318833, 0.20887757]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl69"  :{'CSC': np.array([0.29471967, 0.22647453, 0.92495493, 0.90023464]), 'DT': np.array([0.20892339, 0.18147985, 0.13021864, 0.0686864 ]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl70"  :{'CSC': np.array([0.25924881, 0.19921728, 0.81363239, 0.79188729]), 'DT': np.array([0.18377851, 0.15963792, 0.11454623, 0.06041968]), 'norm': 1},
-    "HNL_muonType_mHNL4p6_pl103" :{'CSC': np.array([0.41343217, 0.34843507, 2.50278819, 1.96899924]), 'DT': np.array([0.34989835, 0.335234  , 0.62554189, 0.35331901]), 'norm': 1},
-    "HNL_muonType_mHNL4p7_pl106" :{'CSC': np.array([0.36367372, 0.30649931, 2.20156621, 1.73202119]), 'DT': np.array([0.30778648, 0.29488705, 0.55025507, 0.31079546]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl115" :{'CSC': np.array([0.42879209, 0.3762481 , 3.0044719 , 2.24811973]), 'DT': np.array([0.39118953, 0.37494761, 0.84560046, 0.47963797]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl118" :{'CSC': np.array([0.377185  , 0.33096492, 2.64286999, 1.97754826]), 'DT': np.array([0.34410808, 0.32982095, 0.74382858, 0.42191135]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl1150":{'CSC': np.array([0.04855612, 0.09838235, 1.67006573, 0.6044162 ]), 'DT': np.array([0.07259159, 0.14239572, 1.4470393 , 0.75918659]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl1175":{'CSC': np.array([0.04271217, 0.08654159, 1.4690657 , 0.53167195]), 'DT': np.array([0.06385486, 0.12525775, 1.27288152, 0.66781502]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl1725":{'CSC': np.array([0.02424095, 0.05223031, 0.89146583, 0.31413251]), 'DT': np.array([0.03796545, 0.07802325, 0.80362061, 0.41447018]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl1762":{'CSC': np.array([0.02132344, 0.04594415, 0.78417385, 0.27632523]), 'DT': np.array([0.03339614, 0.06863279, 0.7069012 , 0.3645868 ]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl230" :{'CSC': np.array([0.3827744 , 0.45937912, 5.93607324, 2.72403154]), 'DT': np.array([0.36235956, 0.46072699, 3.07829464, 1.90655272]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl235" :{'CSC': np.array([0.33670576, 0.40409074, 5.22163972, 2.39618191]), 'DT': np.array([0.31874794, 0.4052764 , 2.70780783, 1.6770904 ]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl2300":{'CSC': np.array([0.01447597, 0.0322255 , 0.55059505, 0.19127802]), 'DT': np.array([0.02324198, 0.04897345, 0.50595518, 0.25864986]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl2350":{'CSC': np.array([0.01273373, 0.02834701, 0.48432842, 0.16825684]), 'DT': np.array([0.0204447 , 0.04307927, 0.44506116, 0.22752017]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl575" :{'CSC': np.array([0.14026825, 0.24188493, 3.95004652, 1.53426805]), 'DT': np.array([0.18521835, 0.32037775, 3.02290337, 1.66278714]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl588" :{'CSC': np.array([0.12338633, 0.21277298, 3.47464039, 1.34961189]), 'DT': np.array([0.16292648, 0.28181882, 2.65908315, 1.46266312]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl920" :{'CSC': np.array([0.06972447, 0.13529572, 2.2811553 , 0.84124746]), 'DT': np.array([0.10088035, 0.19147155, 1.91720801, 1.01835827]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl940" :{'CSC': np.array([0.06133281, 0.11901226, 2.00660785, 0.73999949]), 'DT': np.array([0.08873894, 0.16842708, 1.68646328, 0.8957942 ]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl57"  :{'CSC': np.array([0.22627883, 0.17901991, 0.49960402, 0.53858871]), 'DT': np.array([0.16252238, 0.12591116, 0.05229486, 0.02524263]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl59"  :{'CSC': np.array([0.19904514, 0.15747405, 0.43947439, 0.4737671 ]), 'DT': np.array([0.14296207, 0.11075718, 0.04600093, 0.02220456]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl92"  :{'CSC': np.array([0.38749644, 0.31375008, 1.96933395, 1.64324344]), 'DT': np.array([0.3048243 , 0.28884695, 0.42424859, 0.23745655]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl94"  :{'CSC': np.array([0.34085948, 0.27598883, 1.73231562, 1.44547159]), 'DT': np.array([0.2681373 , 0.2540829 , 0.37318833, 0.20887757]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl69"  :{'CSC': np.array([0.29471967, 0.22647453, 0.92495493, 0.90023464]), 'DT': np.array([0.20892339, 0.18147985, 0.13021864, 0.0686864 ]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl70"  :{'CSC': np.array([0.25924881, 0.19921728, 0.81363239, 0.79188729]), 'DT': np.array([0.18377851, 0.15963792, 0.11454623, 0.06041968]), 'norm': 1},
+    #"HNL_muonType_mHNL4p6_pl103" :{'CSC': np.array([0.41343217, 0.34843507, 2.50278819, 1.96899924]), 'DT': np.array([0.34989835, 0.335234  , 0.62554189, 0.35331901]), 'norm': 1},
+    #"HNL_muonType_mHNL4p7_pl106" :{'CSC': np.array([0.36367372, 0.30649931, 2.20156621, 1.73202119]), 'DT': np.array([0.30778648, 0.29488705, 0.55025507, 0.31079546]), 'norm': 1},
+       
+    "HNL_tauType_mHNL1p0_pl100" :{'CSC': np.array([  28.93325548,   69.98464183, 1650.83543401, 1172.92851821]), 'DT': np.array([  51.66776059,  258.40438453, 1325.05898586,  731.9726434 ]), 'norm': 100},
+    "HNL_tauType_mHNL1p0_pl1000":{'CSC': np.array([ 0.        ,  0.        , 79.82491699, 45.57239406]), 'DT': np.array([32.43534333, 18.05214002,  0.        , 35.78129744]), 'norm': 1},
+    "HNL_tauType_mHNL2p0_pl100" :{'CSC': np.array([ 5.01167405, 17.12126049, 50.67835208, 20.07128996]), 'DT': np.array([13.01070024, 12.33133711, 26.41641075, 17.84743787]), 'norm': 1},
+    "HNL_tauType_mHNL2p0_pl1000":{'CSC': np.array([0.        , 0.40591657, 3.29076135, 1.08039624]), 'DT': np.array([0.        , 0.62050892, 3.36455102, 2.18646679]), 'norm': 1},
+    #"HNL_tauType_mHNL4p0_pl10"  :{'CSC': np.array([0., 0., 0., 0.]), 'DT': np.array([0., 0., 0., 0.]), 'norm': 1}
+    "HNL_tauType_mHNL4p0_pl100" :{'CSC': np.array([0.        , 0.        , 0.36229511, 0.06492283]), 'DT': np.array([0.18960767, 0.        , 0.        , 0.        ]), 'norm': 1},
+    #"HNL_tauType_mHNL7p0_pl100" :{'CSC': np.array([0.00318848, 0.        , 0.        , 0.        ]), 'DT': np.array([0., 0., 0., 0.]), 'norm': 1}
+    #"HNL_tauType_mHNL7p0_pl1000":{'CSC': np.array([0.00065771, 0.00058874, 0.00489592, 0.00169193]), 'DT': np.array([0.00113435, 0.00122409, 0.00443656, 0.00349383]), 'norm': 1}
+    
+    
+    
+    
     }
     #data={
     #    "HNL_muonType_mHNL1p0_pl10":{
@@ -219,7 +232,7 @@ def predIntimeFromOOT(h,size,dphi_lep,dphi_met,isSignal=False,kfactor=0.25,lumi=
  
     return N_evts, N_evts_unc
 
-def loadhist(fin='../HNL_histograms_Feb23_muons_signal.pickle'):
+def loadhist(fin='../HNL_histograms_11_March_Tau_muon.pickle'):
     from coffea import hist
     
     #with open('../HNL_histograms_Feb18_muons_signal.pickle','rb') as f:                
@@ -326,14 +339,14 @@ if __name__ == "__main__":
             #obs = bkg_rate_MB34
             #make_datacard_2sig(outdir,name+"_MB34", sigRate, norm, bkg_rate_MB34, obs, bkg_unc_MB34, bkg_unc_name, sig_unc)
     
-            #csc_limit = "combine -M AsymptoticLimits {odir}{name}_CSC.txt -n _{name}_CSC --setParameters norm={norm} --freezeParameter norm -t -1".format(name=name,odir=outdir,norm=1)
-            #print(csc_limit)
-            #os.system(csc_limit)
-            #os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_CSC",outdir))
-            #dt_limit = "combine -M AsymptoticLimits {odir}{name}_DT.txt -n _{name}_DT --setParameters norm={norm} --freezeParameter norm -t -1".format(name=name,odir=outdir,norm=1)
-            #print(dt_limit)
-            #os.system(dt_limit)
-            #os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_DT",outdir))
+            csc_limit = "combine -M AsymptoticLimits {odir}{name}_CSC.txt -n _{name}_CSC --setParameters norm={norm} --freezeParameter norm -t -1".format(name=name,odir=outdir,norm=1)
+            print(csc_limit)
+            os.system(csc_limit)
+            os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_CSC",outdir))
+            dt_limit = "combine -M AsymptoticLimits {odir}{name}_DT.txt -n _{name}_DT --setParameters norm={norm} --freezeParameter norm -t -1".format(name=name,odir=outdir,norm=1)
+            print(dt_limit)
+            os.system(dt_limit)
+            os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_DT",outdir))
 
             cmd = "python combination.py CSC={odir}{name}_CSC.txt DT={odir}{name}_DT.txt {odir}{name}_comb.txt".format(name=name,odir=outdir)
             print(cmd)

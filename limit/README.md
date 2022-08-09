@@ -9,21 +9,36 @@ To make the datacards, we need the following inputs:
  3. Signal prediction (A,B,C,D)
     - Repeat the process for all signal samples using the same cuts
 
-## Signal predictions
+## Apply ABCD selection on pickles 
 
-After preparing the signal histograms with the processor, run a **coffea env**
+After preparing the signal histograms with the processor, do:
+ - Update input pickle file names in the `writeYields` function
+ - Check the `cut` setting on selection for (DT/CSC) of electron/muon channel
+ - Make output dir 
+
+Then run a **coffea env**,
 ```
-python writeABCD.py --loadhist
+python writeABCD.py --writeYields   
 ```
-This prints out the yields for each signal samples to the terminal, which can be copied to the [calSigal](https://github.com/kakwok/LLP_coffea/blob/refactor/limit/writeABCD.py#L66) function.
 
 Run the script in a separate terminal **without coffea env**, to write all the data cards
 ```
 python writeABCD.py
 ```
 
-The manual copy is done for now because combine is not compatible with coffea environment.
-We could improve remove the manual copy by writing the the signal yields to a JSON file and read by the script as input next.  
+The separate command is done because combine is not compatible with coffea environment.
+
+## Limit scan
+
+In **coffea env**, first write the yields:
+```
+python scanCuts.py --writeYields
+```
+Without **coffea env**, check the scan:
+```
+python scanCuts.py --combine --dryRun
+```
+
 
 ## Limit plotting
 

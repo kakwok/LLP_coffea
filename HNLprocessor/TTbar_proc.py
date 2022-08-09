@@ -47,7 +47,6 @@ class ttbarProcessor(MyProcessor):
         bjets = ak.with_field(bjets,bjets.Phi,"phi")
         bjets = ak.with_field(bjets,bjets.Eta,"eta")
 
-        print("bjets before",len(bjets))
         dphi_e = ak.fill_none(bjets.delta_phi(ak.firsts(ele)),-999,axis=None)
         dr_e   = ak.fill_none(bjets.delta_phi(ak.firsts(ele)),-999,axis=None)
         dphi_mu = ak.fill_none(bjets.delta_phi(ak.firsts(muon)),-999,axis=None)
@@ -58,8 +57,6 @@ class ttbarProcessor(MyProcessor):
         bjets= ak.with_field(bjets,dphi_mu,"dphi_mu")
         bjets= ak.with_field(bjets,dr_mu,"dr_mu")
 
-        print("bjets after",len(bjets))
-        print("bjets",ak.num(bjets,axis=1))
         return bjets
         
 
@@ -146,9 +143,7 @@ class ttbarProcessor(MyProcessor):
             "ABCD_negMB1"       :preselections+["dt_cls_negMB1"],            
         }
 
-        #weights = Weights(len(events))
         weights = Weights(len(events))
-        print("length of w",len(weights.weight()))
         if not isData:
             corrections.add_pileup_weight(weights, events.npu,'2018')
             corrections.add_Wpt_kfactor(weights, events.gWPt, dataset)

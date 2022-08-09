@@ -44,6 +44,20 @@ def maskAndFill(denom,selection,value):
     numer = ak.fill_none(numer, value) #fill none with same structure
     return ak.flatten(numer)
 
+# e.g. pair_dict = {"cls":cluster,"bjets":bjets}
+def delta_r_pairs(pair_dict):
+    pairs = ak.cartesian(pair_dict,axis=1,nested=True)
+    main_obj = getattr(pairs,pairs.fields[0])
+    sec_obj = getattr(pairs,pairs.fields[1])    
+    dr_pairs = main_obj.delta_r(sec_obj)       
+    return dr_pairs,pairs
+def delta_phi_pairs(pair_dict):
+    pairs = ak.cartesian(pair_dict,axis=1,nested=True)
+    main_obj = getattr(pairs,pairs.fields[0])
+    sec_obj = getattr(pairs,pairs.fields[1])    
+    dphi_pairs = main_obj.delta_phi(sec_obj)       
+    return dphi_pairs,pairs
+
 def buildMask(allMasks,cutnames):
     if type(allMasks)==type({}):
         ## build masks with event allMasks[cutnames]
@@ -172,7 +186,9 @@ class MyProcessor(processor.ProcessorABC):
                 "Cluster_match_gParticle_phi":events.cscRechitCluster3_match_gParticle_phi,
                 "Cluster_match_gParticle_e":events.cscRechitCluster3_match_gParticle_E,
                 "Cluster_match_gParticle_pt":events.cscRechitCluster3_match_gParticle_pt,
-            }
+               
+            },with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior
         )
         return cluster
 
@@ -287,7 +303,10 @@ class MyProcessor(processor.ProcessorABC):
                  "Cluster_match_gParticle_phi":events.dtRechitCluster_match_gParticle_Phi,
                  "Cluster_match_gParticle_e":events.dtRechitCluster_match_gParticle_E,
                  "Cluster_match_gParticle_pt":events.dtRechitCluster_match_gParticle_Pt,
-            }
+           
+            },with_name="PtEtaPhiMLorentzVector",
+             behavior=vector.behavior,
+
         )
         return dt_cluster
  
@@ -405,6 +424,7 @@ class MyProcessor(processor.ProcessorABC):
             "ABCD_OOT"     :preselections+["cls_OOT"],
             "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
             "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
+            "PreSel_dt"    :preselections,
             "JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
             ##"1cls"         :preselections+["n_cls"],            
             #"StatVeto"     :preselections+["cls_StatVeto"],

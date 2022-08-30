@@ -229,14 +229,7 @@ class MyProcessor(processor.ProcessorABC):
         dphi_met      = (abs(cluster.dphi_cluster_MET)<0.75)        
         dphi_lep      = (abs(cluster.dphi_cluster_lep)>2.5)      
         dr_lep      = (cluster.dr_cluster_lep>0.4)
-        size          = (cluster.size < 200)
-
-        pid_gamma     = (cluster.Cluster_match_gParticle_id==22)
-        pid_gluon     = (cluster.Cluster_match_gParticle_id==21)
-        pid_quarks    = (abs(cluster.Cluster_match_gParticle_id)<10)
-        pid_muons     = (abs(cluster.Cluster_match_gParticle_id)==13)
-        pid_mesons    = (abs(cluster.Cluster_match_gParticle_id)>100) & (abs(cluster.Cluster_match_gParticle_id)<1000)
-       
+        
         clusterMasks = ak.zip({
             "ClusterID"     : ClusterID     ,  
             "muonVeto" : muonVeto ,
@@ -252,12 +245,6 @@ class MyProcessor(processor.ProcessorABC):
             "dphi_MET"      : dphi_met      ,
             "dphi_lep"      : dphi_lep      ,
             "dr_lep"        : dr_lep        ,
-            "pid_gamma"     : pid_gamma     ,
-            "pid_gluon"     : pid_gluon     ,
-            "pid_quarks"    : pid_quarks    ,
-            "pid_muons"     : pid_muons     ,
-            "pid_mesons"    : pid_mesons    ,
-            "size"          : size          ,
             })
         return clusterMasks 
 
@@ -299,12 +286,6 @@ class MyProcessor(processor.ProcessorABC):
                  "dphi_cluster_MET":events.dtRechitClusterMetEENoise_dPhi,
                  "dphi_cluster_lep":dphi_dt_cluster_lep,
                  "dr_cluster_lep":dr_dt_cluster_lep,
-                 "Cluster_match_gParticle_id":events.dtRechitCluster_match_gParticle_Id,
-                 "Cluster_match_gParticle_minDeltaR":events.dtRechitCluster_match_gParticle_deltaR, 
-                 "Cluster_match_gParticle_eta":events.dtRechitCluster_match_gParticle_Eta,
-                 "Cluster_match_gParticle_phi":events.dtRechitCluster_match_gParticle_Phi,
-                 "Cluster_match_gParticle_e":events.dtRechitCluster_match_gParticle_E,
-                 "Cluster_match_gParticle_pt":events.dtRechitCluster_match_gParticle_Pt,
            
             },with_name="PtEtaPhiMLorentzVector",
              behavior=vector.behavior,
@@ -425,11 +406,6 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['n_cls']        =ak.num(cluster,axis=1)>=1
         selectionMasks['n_cls_dt']     =ak.num(dt_cluster,axis=1)>=1
         
-        selectionMasks["pid_gamma"]    =( clusterMasks.pid_gamma )
-        selectionMasks["pid_gluon"]    =( clusterMasks.pid_gluon )
-        selectionMasks["pid_quarks"]    =( clusterMasks.pid_quarks )
-        selectionMasks["pid_muon"]    =( clusterMasks.pid_muons )
-        selectionMasks["pid_mesons"]    =( clusterMasks.pid_mesons )
 
         clusterMasks["neg_ME11_12_veto"] = ~clusterMasks['ME11_12_veto']  #make veto mask
 
@@ -438,7 +414,7 @@ class MyProcessor(processor.ProcessorABC):
         CSC_sel_OOT  = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto",
                         "OOT_timeCut","timeSpreadCut","ClusterID"]
 
-        CSC_sel_negME11 = ["neg_ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID","size"]
+        CSC_sel_negME11 = ["neg_ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID",]
 
         selectionMasks['cls_ABCD']  = buildMask(clusterMasks,CSC_sel_ABCD)
         selectionMasks['cls_OOT']   = buildMask(clusterMasks,CSC_sel_OOT)
@@ -451,9 +427,9 @@ class MyProcessor(processor.ProcessorABC):
         dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
 
 
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones","neg_dt_size"]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","neg_dt_size"]
-        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","neg_dt_size"]
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones",]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones",]
+        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones",]
 
         DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj"]
 
@@ -463,6 +439,7 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         
         selectionMasks['dt_JetMuStaVeto'] =  buildMask(dt_clusterMasks,DT_sel_vetos)
 
+        selectionMasks['dt_cls_negMB1']  = buildMask(dt_clusterMasks,DT_sel_negMB1)
         if self.isElectronChannel:
             preselections = ['trigger_ele','MET',"METfilters",'good_lepton']       
         else:
@@ -516,15 +493,7 @@ class MyProcessor(processor.ProcessorABC):
         output["nPU"].fill(dataset=dataset,nPU=events.npu,weight=weights.weight())        
         output["gWPt"].fill(dataset=dataset,gWPt=events.gWPt,weight=weights.weight())        
         output["gWPt_noweight"].fill(dataset=dataset,gWPt=events.gWPt)        
-        output["nPU_noweight"].fill(dataset=dataset,nPU=events.npu)        
-        
-        
-        def buildMask(allMasks,cutnames):
-            allcuts = allMasks[cutnames[0]]
-            for i,cutname in enumerate(cutnames):
-                allcuts = (allcuts) & allMasks[cutname]
-            return allcuts
-        
+        output["nPU_noweight"].fill(dataset=dataset,nPU=events.npu)            
         
         if isSignal:
             output['accept'].fill(dataset=dataset,
@@ -564,7 +533,6 @@ class MyProcessor(processor.ProcessorABC):
 
 
         output["metXYCorr"].fill(dataset=dataset,region="noselection",metXYCorr=events.metXYCorr,weight=weights.weight()) 
-        gparticle_list = ["gamma", "gluon", "quarks","muon","mesons"] 
 
  
         ## Fill regions plot
@@ -593,56 +561,6 @@ class MyProcessor(processor.ProcessorABC):
                                                 ClusterAvgStation10 =np.abs(ak.flatten(cluster[cut].AvgStation10)),
                                                 ClusterNStation10=np.abs(ak.flatten(cluster[cut].NStation10)),
                                                 weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_id"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_id=ak.flatten(cluster[cut].Cluster_match_gParticle_id),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_minDeltaR"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_minDeltaR=ak.flatten(cluster[cut].Cluster_match_gParticle_minDeltaR),
-                                           weight=ak.flatten(w_cls)) 
-                output["Cluster_match_gParticle_eta"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_eta=ak.flatten(cluster[cut].Cluster_match_gParticle_eta),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_phi"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_phi=ak.flatten(cluster[cut].Cluster_match_gParticle_phi),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_pt"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_pt=ak.flatten(cluster[cut].Cluster_match_gParticle_pt),
-                                           weight=ak.flatten(w_cls))                
-                output["Cluster_match_gParticle_e"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_e=ak.flatten(cluster[cut].Cluster_match_gParticle_e),
-                                           weight=ak.flatten(w_cls))
-                for particle_name in gparticle_list:
-                    #Add pid req
-                    cut_pid = buildMask(selectionMasks,cutnames+["pid_"+str(particle_name)])
-
-                    if cut_pid.ndim==1:
-                        ev_cut_pid = cut_pid                  ##This is a per-event cut
-                    else:
-                        ev_cut_pid = ak.any(cut_pid,axis=1)   ##This is a per-cluster cut, require at least 1 passing cluster 
-                   
-                    w_cls_pid      = (weights.weight() * ak.ones_like(cluster.size))[cut_pid]
-                    
-                    output["Cluster_match_gParticle_minDeltaR_cat"].fill(dataset=dataset,region=region,
-                                               pdgId=particle_name,
-                                               Cluster_match_gParticle_minDeltaR=ak.flatten(cluster[cut_pid].Cluster_match_gParticle_minDeltaR),
-                                               weight=ak.flatten(w_cls_pid))
-                    output["Cluster_match_gParticle_eta_cat"].fill(dataset=dataset,region=region,
-                                               pdgId=particle_name,
-                                               Cluster_match_gParticle_eta=ak.flatten(cluster[cut_pid].Cluster_match_gParticle_eta),
-                                               weight=ak.flatten(w_cls_pid))
-                    output["Cluster_match_gParticle_phi_cat"].fill(dataset=dataset,region=region,
-                                               pdgId=particle_name,
-                                               Cluster_match_gParticle_phi=ak.flatten(cluster[cut_pid].Cluster_match_gParticle_phi),
-                                               weight=ak.flatten(w_cls_pid))
-                    output["Cluster_match_gParticle_pt_cat"].fill(dataset=dataset,region=region,
-                                               pdgId=particle_name,
-                                               Cluster_match_gParticle_pt=ak.flatten(cluster[cut_pid].Cluster_match_gParticle_pt),
-                                               weight=ak.flatten(w_cls_pid))
-                    output["Cluster_match_gParticle_e_cat"].fill(dataset=dataset,region=region,
-                                               pdgId=particle_name,
-                                               Cluster_match_gParticle_e=ak.flatten(cluster[cut_pid].Cluster_match_gParticle_e),
-                                               weight=ak.flatten(w_cls_pid))
-
                 output["ClusterSize"].fill(dataset=dataset,region=region,
                                            ClusterSize=ak.flatten(cluster[cut].size),
                                            weight=ak.flatten(w_cls))        
@@ -694,25 +612,6 @@ class MyProcessor(processor.ProcessorABC):
                 output["ClusterNStation10_dt"].fill(dataset=dataset,region=region,
                                            ClusterNStation10=ak.flatten(dt_cluster[cut].NStation10),
                                            weight=ak.flatten(w_cls))        
-                output["Cluster_match_gParticle_id_dt"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_id=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_id),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_minDeltaR_dt"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_minDeltaR=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_minDeltaR),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_eta_dt"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_eta=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_eta),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_phi_dt"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_phi=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_phi),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_pt_dt"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_pt=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_pt),
-                                           weight=ak.flatten(w_cls))
-                output["Cluster_match_gParticle_e_dt"].fill(dataset=dataset,region=region,
-                                           Cluster_match_gParticle_e=ak.flatten(dt_cluster[cut].Cluster_match_gParticle_e),
-                                           weight=ak.flatten(w_cls))
-
 
         ## fill cutflow plots:
         output['cutflow'].fill(dataset=dataset,region="csc_cutflow",cutflow="NoSelection",weight=weights.weight())

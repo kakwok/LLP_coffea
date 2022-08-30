@@ -229,7 +229,8 @@ class MyProcessor(processor.ProcessorABC):
         dphi_met      = (abs(cluster.dphi_cluster_MET)<0.75)        
         dphi_lep      = (abs(cluster.dphi_cluster_lep)>2.5)      
         dr_lep      = (cluster.dr_cluster_lep>0.4)
-        
+        size          = (cluster.size < 200)
+
         pid_gamma     = (cluster.Cluster_match_gParticle_id==22)
         pid_gluon     = (cluster.Cluster_match_gParticle_id==21)
         pid_quarks    = (abs(cluster.Cluster_match_gParticle_id)<10)
@@ -256,6 +257,7 @@ class MyProcessor(processor.ProcessorABC):
             "pid_quarks"    : pid_quarks    ,
             "pid_muons"     : pid_muons     ,
             "pid_mesons"    : pid_mesons    ,
+            "size"          : size          ,
             })
         return clusterMasks 
 
@@ -308,6 +310,43 @@ class MyProcessor(processor.ProcessorABC):
              behavior=vector.behavior,
 
         )
+        eta_0 = ak.full_like(events.weight,0.3,dtype=float)
+        eta_1 = ak.full_like(events.weight,-0.3,dtype=float)
+
+        phi_0 = ak.full_like(events.weight,1.7,dtype=float)
+        phi_1 = ak.full_like(events.weight,1.15,dtype=float)
+
+        deadzone_1 = ak.zip(
+            {
+            'pt':ak.ones_like(events.weight),
+            "eta":eta_0,
+            "phi":phi_0,
+            'mass':ak.ones_like(events.weight)
+            },with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior
+        )
+
+        deadzone_2 = ak.zip(
+        {   
+            'pt':ak.ones_like(events.weight),
+            "eta":eta_1,
+            "phi":phi_1,
+            'mass':ak.ones_like(events.weight)
+            },with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior
+        )
+
+
+        dr_dt_cluster_dz1 = ak.fill_none(dt_cluster.delta_r(deadzone_1),-999,axis=None)
+
+        dt_cluster = ak.with_field(dt_cluster,dr_dt_cluster_dz1<0.4,"Deadzone_1")
+
+        dr_dt_cluster_dz2 = ak.fill_none(dt_cluster.delta_r(deadzone_2),-999,axis=None)
+
+        dt_cluster = ak.with_field(dt_cluster,dr_dt_cluster_dz2<0.4,"Deadzone_2")
+
+
+
         return dt_cluster
  
     def selectDTcluster(self,dt_cluster,events):
@@ -321,6 +360,7 @@ class MyProcessor(processor.ProcessorABC):
         dt_dphi_MET  = (abs(dt_cluster.dphi_cluster_MET)<0.75)
         dt_size      = (dt_cluster.size>=100)
         dr_lep      = (dt_cluster.dr_cluster_lep>0.4)
+        dt_deadzones = ~(dt_cluster.Deadzone_1) & ~(dt_cluster.Deadzone_2)
         clusterMasks = ak.zip({
                 "dt_jetVeto"  :dt_jetVeto  ,
                 "dt_muonVeto" :dt_muonVeto ,
@@ -332,7 +372,8 @@ class MyProcessor(processor.ProcessorABC):
                 "dt_dphi_MET" :dt_dphi_MET ,
                 "dt_size"     :dt_size     ,
                 "dr_lep"     :dr_lep     ,
-        })
+                "dt_deadzones": dt_deadzones,
+                })
         return clusterMasks
     
     def process(self, events):
@@ -390,21 +431,33 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks["pid_muon"]    =( clusterMasks.pid_muons )
         selectionMasks["pid_mesons"]    =( clusterMasks.pid_mesons )
 
+        clusterMasks["neg_ME11_12_veto"] = ~clusterMasks['ME11_12_veto']  #make veto mask
+
         CSC_sel_ABCD = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto",
                         "IntimeCut","timeSpreadCut","ClusterID"]
         CSC_sel_OOT  = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto",
                         "OOT_timeCut","timeSpreadCut","ClusterID"]
 
+        CSC_sel_negME11 = ["neg_ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID","size"]
+
         selectionMasks['cls_ABCD']  = buildMask(clusterMasks,CSC_sel_ABCD)
         selectionMasks['cls_OOT']   = buildMask(clusterMasks,CSC_sel_OOT)
+        selectionMasks['cls_negME11']   = buildMask(clusterMasks,CSC_sel_negME11)
 
         selectionMasks['cls_StatVeto']     =  buildMask(clusterMasks,['ME11_12_veto','MB1seg_veto','RB1_veto'])     
         selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
         selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto'])
 
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT"]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
+        dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
+
+
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones","neg_dt_size"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","neg_dt_size"]
+        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","neg_dt_size"]
+
         DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj"]
+
+
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         
@@ -418,14 +471,17 @@ class MyProcessor(processor.ProcessorABC):
         regions = {
             "PreSel"       :preselections,            
             #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
-            "JetMuVeto"    :preselections+["cls_JetMuVeto"],
-            "JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
-            "ABCD"         :preselections+["cls_ABCD"],            
-            "ABCD_OOT"     :preselections+["cls_OOT"],
-            "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
-            "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
+            #"JetMuVeto"    :preselections+["cls_JetMuVeto"],
+            #"JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
+            #"ABCD"         :preselections+["cls_ABCD"],            
+            #"ABCD_OOT"     :preselections+["cls_OOT"],
+            #"ABCD_dt"      :preselections+["dt_cls_ABCD"],            
+            #"ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
             "PreSel_dt"    :preselections,
-            "JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
+            "ABCD_negME11"      :preselections+["cls_negME11"],
+            "ABCD_dt_negMB1"       :preselections+["dt_cls_negMB1"],
+            
+            #"JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
             ##"1cls"         :preselections+["n_cls"],            
             #"StatVeto"     :preselections+["cls_StatVeto"],
             #"noselection":[],

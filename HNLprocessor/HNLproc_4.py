@@ -178,15 +178,6 @@ class MyProcessor(processor.ProcessorABC):
                 "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_lep":dphi_cluster_lep,                
                 "dr_cluster_lep":dr_cluster_lep,
-                "Cluster_match_gParticle_id":events.cscRechitCluster3_match_gParticle_id,
-                "Cluster_match_gParticle_minDeltaR":events.cscRechitCluster3_match_gParticle_minDeltaR,
-                "Cluster_match_gParticle":events.cscRechitCluster3_match_gParticle,
-                "Cluster_match_gParticle_index":events.cscRechitCluster3_match_gParticle_index,
-                "Cluster_match_gParticle_eta":events.cscRechitCluster3_match_gParticle_eta,
-                "Cluster_match_gParticle_phi":events.cscRechitCluster3_match_gParticle_phi,
-                "Cluster_match_gParticle_e":events.cscRechitCluster3_match_gParticle_E,
-                "Cluster_match_gParticle_pt":events.cscRechitCluster3_match_gParticle_pt,
-               
             },with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior
         )

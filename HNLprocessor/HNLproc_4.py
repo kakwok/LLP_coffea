@@ -177,7 +177,7 @@ class MyProcessor(processor.ProcessorABC):
                 'JetVetoEta':events.cscRechitCluster3JetVetoEta,
                 "dphi_cluster_MET":events.cscRechitCluster3MetXYCorr_dPhi,                
                 "dphi_cluster_lep":dphi_cluster_lep,                
-                "dr_cluster_lep":dr_cluster_lep,
+                "dr_cluster_lep":dr_cluster_lep,                
             },with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior
         )
@@ -220,7 +220,7 @@ class MyProcessor(processor.ProcessorABC):
         dphi_met      = (abs(cluster.dphi_cluster_MET)<0.75)        
         dphi_lep      = (abs(cluster.dphi_cluster_lep)>2.5)      
         dr_lep      = (cluster.dr_cluster_lep>0.4)
-        
+
         clusterMasks = ak.zip({
             "ClusterID"     : ClusterID     ,  
             "muonVeto" : muonVeto ,
@@ -235,7 +235,7 @@ class MyProcessor(processor.ProcessorABC):
             "timeSpreadCut" : timeSpreadCut ,
             "dphi_MET"      : dphi_met      ,
             "dphi_lep"      : dphi_lep      ,
-            "dr_lep"        : dr_lep        ,
+            "dr_lep"      : dr_lep      ,
             })
         return clusterMasks 
 
@@ -277,10 +277,8 @@ class MyProcessor(processor.ProcessorABC):
                  "dphi_cluster_MET":events.dtRechitClusterMetEENoise_dPhi,
                  "dphi_cluster_lep":dphi_dt_cluster_lep,
                  "dr_cluster_lep":dr_dt_cluster_lep,
-           
             },with_name="PtEtaPhiMLorentzVector",
              behavior=vector.behavior,
-
         )
         eta_0 = ak.full_like(events.weight,0.3,dtype=float)
         eta_1 = ak.full_like(events.weight,-0.3,dtype=float)
@@ -299,7 +297,7 @@ class MyProcessor(processor.ProcessorABC):
         )
 
         deadzone_2 = ak.zip(
-        {   
+        {
             'pt':ak.ones_like(events.weight),
             "eta":eta_1,
             "phi":phi_1,
@@ -329,7 +327,7 @@ class MyProcessor(processor.ProcessorABC):
         dt_MB1adj   = (dt_cluster.nMB1_cosmic_minus<=8) & (dt_cluster.nMB1_cosmic_plus<=8)
         dt_time     = (dt_cluster.rpcBx==0)
         dt_OOT      = (dt_cluster.rpcBx>=-100)&(dt_cluster.rpcBx<0)
-        dt_dphi_MET  = (abs(dt_cluster.dphi_cluster_MET)<0.75)
+        dt_dphi_MET  = (abs(dt_cluster.dphi_cluster_MET)<1)
         dt_size      = (dt_cluster.size>=100)
         dr_lep      = (dt_cluster.dr_cluster_lep>0.4)
         dt_deadzones = ~(dt_cluster.Deadzone_1) & ~(dt_cluster.Deadzone_2)
@@ -344,8 +342,7 @@ class MyProcessor(processor.ProcessorABC):
                 "dt_dphi_MET" :dt_dphi_MET ,
                 "dt_size"     :dt_size     ,
                 "dr_lep"     :dr_lep     ,
-                "dt_deadzones": dt_deadzones,
-                })
+        })
         return clusterMasks
     
     def process(self, events):
@@ -396,41 +393,27 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['MET']          =events.metEENoise>=30
         selectionMasks['n_cls']        =ak.num(cluster,axis=1)>=1
         selectionMasks['n_cls_dt']     =ak.num(dt_cluster,axis=1)>=1
-        
-
-        clusterMasks["neg_ME11_12_veto"] = ~clusterMasks['ME11_12_veto']  #make veto mask
 
         CSC_sel_ABCD = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto",
                         "IntimeCut","timeSpreadCut","ClusterID"]
         CSC_sel_OOT  = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto",
                         "OOT_timeCut","timeSpreadCut","ClusterID"]
 
-        CSC_sel_negME11 = ["neg_ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID",]
-
         selectionMasks['cls_ABCD']  = buildMask(clusterMasks,CSC_sel_ABCD)
         selectionMasks['cls_OOT']   = buildMask(clusterMasks,CSC_sel_OOT)
-        selectionMasks['cls_negME11']   = buildMask(clusterMasks,CSC_sel_negME11)
 
         selectionMasks['cls_StatVeto']     =  buildMask(clusterMasks,['ME11_12_veto','MB1seg_veto','RB1_veto'])     
         selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
         selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto'])
 
-        dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
-
-
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones",]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones",]
-        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones",]
-
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
         DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj"]
-
-
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         
         selectionMasks['dt_JetMuStaVeto'] =  buildMask(dt_clusterMasks,DT_sel_vetos)
 
-        selectionMasks['dt_cls_negMB1']  = buildMask(dt_clusterMasks,DT_sel_negMB1)
         if self.isElectronChannel:
             preselections = ['trigger_ele','MET',"METfilters",'good_lepton']       
         else:
@@ -439,21 +422,19 @@ class MyProcessor(processor.ProcessorABC):
         regions = {
             "PreSel"       :preselections,            
             #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
-            #"JetMuVeto"    :preselections+["cls_JetMuVeto"],
-            #"JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
-            #"ABCD"         :preselections+["cls_ABCD"],            
-            #"ABCD_OOT"     :preselections+["cls_OOT"],
-            #"ABCD_dt"      :preselections+["dt_cls_ABCD"],            
-            #"ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
+            "JetMuVeto"    :preselections+["cls_JetMuVeto"],
+            "JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
+            "ABCD"         :preselections+["cls_ABCD"],            
+            "ABCD_OOT"     :preselections+["cls_OOT"],
+            "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
+            "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
             "PreSel_dt"    :preselections,
-            "ABCD_negME11"      :preselections+["cls_negME11"],
-            "ABCD_dt_negMB1"       :preselections+["dt_cls_negMB1"],
-            
-            #"JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
+            "JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
             ##"1cls"         :preselections+["n_cls"],            
             #"StatVeto"     :preselections+["cls_StatVeto"],
             #"noselection":[],
         }
+
 
         weights = Weights(len(events))
         if not isData:
@@ -484,13 +465,11 @@ class MyProcessor(processor.ProcessorABC):
         output["nPU"].fill(dataset=dataset,nPU=events.npu,weight=weights.weight())        
         output["gWPt"].fill(dataset=dataset,gWPt=events.gWPt,weight=weights.weight())        
         output["gWPt_noweight"].fill(dataset=dataset,gWPt=events.gWPt)        
-        output["nPU_noweight"].fill(dataset=dataset,nPU=events.npu)            
-        
+        output["nPU_noweight"].fill(dataset=dataset,nPU=events.npu)        
         if isSignal:
             output['accept'].fill(dataset=dataset,
                                   gLLP_csc=ak.firsts(events.gLLP_csc),
                                   gLLP_dt=gLLP_dt,weight=weights.weight()) ## only 1 LLP
-
             cut = selectionMasks["Acceptance_csc"]
             output['gLLP_e'].fill(dataset=dataset  ,region="gLLP_csc" ,gLLP_e = ak.firsts(llp[cut].e) , weight=weights.weight()[cut])
             output['gLLP_pt'].fill(dataset=dataset ,region="gLLP_csc" ,gLLP_pt = ak.firsts(llp[cut].pt), weight=weights.weight()[cut])
@@ -524,11 +503,12 @@ class MyProcessor(processor.ProcessorABC):
 
 
         output["metXYCorr"].fill(dataset=dataset,region="noselection",metXYCorr=events.metXYCorr,weight=weights.weight()) 
+            
 
  
         ## Fill regions plot
         for region,cutnames in regions.items():
-        
+
             ## Fill other regions without cutflows
             cut = buildMask(selectionMasks,cutnames)
 
@@ -546,11 +526,6 @@ class MyProcessor(processor.ProcessorABC):
                                                 ClusterSize=ak.flatten(cluster[cut].size),
                                                 dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_lep)),
                                                 dphi_MET=np.abs(ak.flatten(cluster[cut].dphi_cluster_MET)),
-                                                weight=ak.flatten(w_cls))
-                output["ClusterID_csc"].fill(dataset=dataset,region=region,
-                                                ClusterEta=ak.flatten(cluster[cut].eta),
-                                                ClusterAvgStation10 =np.abs(ak.flatten(cluster[cut].AvgStation10)),
-                                                ClusterNStation10=np.abs(ak.flatten(cluster[cut].NStation10)),
                                                 weight=ak.flatten(w_cls))
                 output["ClusterSize"].fill(dataset=dataset,region=region,
                                            ClusterSize=ak.flatten(cluster[cut].size),
@@ -583,11 +558,6 @@ class MyProcessor(processor.ProcessorABC):
                                                 dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_lep)),
                                                 dphi_MET=np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_MET)),
                                                 weight=ak.flatten(w_cls))
-                output["ClusterID_dt"].fill(dataset=dataset,region=region,
-                                                ClusterEta=ak.flatten(dt_cluster[cut].eta),
-                                                ClusterAvgStation10 =np.abs(ak.flatten(dt_cluster[cut].AvgStation10)),
-                                                ClusterNStation10=np.abs(ak.flatten(dt_cluster[cut].NStation10)),
-                                                weight=ak.flatten(w_cls))
                 output["ClusterSize_dt"].fill(dataset=dataset,region=region,
                                            ClusterSize=ak.flatten(dt_cluster[cut].size),
                                            weight=ak.flatten(w_cls))        
@@ -602,8 +572,7 @@ class MyProcessor(processor.ProcessorABC):
                                            weight=ak.flatten(w_cls))        
                 output["ClusterNStation10_dt"].fill(dataset=dataset,region=region,
                                            ClusterNStation10=ak.flatten(dt_cluster[cut].NStation10),
-                                           weight=ak.flatten(w_cls))        
-
+                                           weight=ak.flatten(w_cls))       
         ## fill cutflow plots:
         output['cutflow'].fill(dataset=dataset,region="csc_cutflow",cutflow="NoSelection",weight=weights.weight())
         output['cutflow'].fill(dataset=dataset,region="dt_cutflow",cutflow="NoSelection",weight=weights.weight())

@@ -406,9 +406,9 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
         selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto'])
 
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT"]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
-        DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj"]
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
+        DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones"]
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         

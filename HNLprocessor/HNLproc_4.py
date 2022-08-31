@@ -342,6 +342,7 @@ class MyProcessor(processor.ProcessorABC):
                 "dt_dphi_MET" :dt_dphi_MET ,
                 "dt_size"     :dt_size     ,
                 "dr_lep"     :dr_lep     ,
+                "dt_deadzones": dt_deadzones,
         })
         return clusterMasks
     

@@ -280,6 +280,43 @@ class MyProcessor(processor.ProcessorABC):
             },with_name="PtEtaPhiMLorentzVector",
              behavior=vector.behavior,
         )
+        eta_0 = ak.full_like(events.weight,0.3,dtype=float)
+        eta_1 = ak.full_like(events.weight,-0.3,dtype=float)
+
+        phi_0 = ak.full_like(events.weight,1.7,dtype=float)
+        phi_1 = ak.full_like(events.weight,1.15,dtype=float)
+
+        deadzone_1 = ak.zip(
+            {
+            'pt':ak.ones_like(events.weight),
+            "eta":eta_0,
+            "phi":phi_0,
+            'mass':ak.ones_like(events.weight)
+            },with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior
+        )
+
+        deadzone_2 = ak.zip(
+        {
+            'pt':ak.ones_like(events.weight),
+            "eta":eta_1,
+            "phi":phi_1,
+            'mass':ak.ones_like(events.weight)
+            },with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior
+        )
+
+
+        dr_dt_cluster_dz1 = ak.fill_none(dt_cluster.delta_r(deadzone_1),-999,axis=None)
+
+        dt_cluster = ak.with_field(dt_cluster,dr_dt_cluster_dz1<0.4,"Deadzone_1")
+
+        dr_dt_cluster_dz2 = ak.fill_none(dt_cluster.delta_r(deadzone_2),-999,axis=None)
+
+        dt_cluster = ak.with_field(dt_cluster,dr_dt_cluster_dz2<0.4,"Deadzone_2")
+
+
+
         return dt_cluster
  
     def selectDTcluster(self,dt_cluster,events):
@@ -293,6 +330,7 @@ class MyProcessor(processor.ProcessorABC):
         dt_dphi_MET  = (abs(dt_cluster.dphi_cluster_MET)<1)
         dt_size      = (dt_cluster.size>=100)
         dr_lep      = (dt_cluster.dr_cluster_lep>0.4)
+        dt_deadzones = ~(dt_cluster.Deadzone_1) & ~(dt_cluster.Deadzone_2)
         clusterMasks = ak.zip({
                 "dt_jetVeto"  :dt_jetVeto  ,
                 "dt_muonVeto" :dt_muonVeto ,
@@ -304,6 +342,7 @@ class MyProcessor(processor.ProcessorABC):
                 "dt_dphi_MET" :dt_dphi_MET ,
                 "dt_size"     :dt_size     ,
                 "dr_lep"     :dr_lep     ,
+                "dt_deadzones": dt_deadzones,
         })
         return clusterMasks
     
@@ -368,9 +407,9 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
         selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto'])
 
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT"]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
-        DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj"]
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
+        DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones"]
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         

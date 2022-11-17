@@ -7,7 +7,7 @@ from coffea.lookup_tools.lookup_base import lookup_base
 from coffea import lookup_tools
 from coffea import util
 import importlib.resources
-
+from coffea.lookup_tools import extractor
 #with gzip.open("corrections.coffea") as fin:
 #    compiled = pickle.load(fin)
 #compiled = util.load("/uscms/home/kkwok/work/LLP/CMSSW_10_6_20/src/llp_analyzer/corrections.coffea")
@@ -71,3 +71,28 @@ def reweightXsec(ctau,mass):
         "10p0":-2.11196473,
     }
     return np.exp(-1*np.log(ctau)+cof[mass])
+
+# Root files from https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2018#Medium_pT_from_15_to_120_GeV
+def add_muonSFs(weights, leadingmuon):
+
+    for sf in compiled['muonsf_keys']:
+
+        lep_pt = np.array(ak.fill_none(leadingmuon.pt, 0.))
+        lep_eta = np.array(ak.fill_none(leadingmuon.eta, 0.))
+
+        if 'value' in sf:
+            
+            nom = compiled['muonsf_evaluator'][sf](np.abs(lep_eta),lep_pt)
+            shift = compiled['muonsf_evaluator'][sf.replace('_value','_error')](np.abs(lep_eta),lep_pt)
+                      
+            weights.add(sf, nom, shift, shift=True)
+
+# Root files from: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#Electron_Scale_Factors
+def add_electronSFs(weights, leadingelectron):
+
+    lep_pt = np.array(ak.fill_none(leadingelectron.pt, 0.))
+    lep_eta = np.array(ak.fill_none(leadingelectron.eta, 0.))
+
+    nom = compiled['elesf_evaluator']["electron_SF_2018_value"](np.abs(lep_eta),lep_pt)
+    shift = compiled['elesf_evaluator']["electron_SF_2018_error"](np.abs(lep_eta),lep_pt)
+    weights.add("electron_SF_2018_value", nom, shift, shift=True)

@@ -9,6 +9,7 @@ from coffea import hist, lookup_tools
 from coffea.util import load, save
 from coffea.hist import plot
 import warnings
+from coffea.lookup_tools import extractor
 
 corrections = {}
 
@@ -95,6 +96,34 @@ def read_xsections(filename):
 # curl -O https://raw.githubusercontent.com/kakwok/ZPrimePlusJet/newTF/analysis/ggH/xSections.dat
 corrections['xsections'] = read_xsections("metadata/xSections.dat")
 
+basedir="metadata/muonefficiencies/Run2/preUL/"
+ext = extractor()
+year=2018
+ext.add_weight_sets([f'muon_ID_2018_value NUM_TightID_DEN_TrackerMuons_pt_abseta {basedir}/2018/2018_Z/RunABCD_SF_ID.root'])
+ext.add_weight_sets([f'muon_ID_2018_error NUM_TightID_DEN_TrackerMuons_pt_abseta_error {basedir}/2018/2018_Z/RunABCD_SF_ID.root'])
 
+ext.add_weight_sets([f'muon_ISO_2018_value NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta {basedir}/2018/2018_Z/RunABCD_SF_ISO.root'])
+ext.add_weight_sets([f'muon_ISO_2018_error NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta_error {basedir}/2018/2018_Z/RunABCD_SF_ISO.root'])
+
+ext.add_weight_sets([f'muon_trigger_2018_value IsoMu24_PtEtaBins/efficienciesDATA/abseta_pt_DATA {basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root'])
+ext.add_weight_sets([f'muon_trigger_2018_error IsoMu24_PtEtaBins/efficienciesDATA/abseta_pt_DATA_error {basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root'])
+
+ext.finalize()
+lepsf_evaluator = ext.make_evaluator()
+lepsf_keys = lepsf_evaluator.keys()
+
+corrections['muonsf_evaluator'] = lepsf_evaluator
+corrections['muonsf_keys'] = lepsf_keys
+
+basedir="metadata/electron/egammaEffi.root"
+ext = extractor()
+ext.add_weight_sets([f'electron_SF_2018_value EGamma_SF2D {basedir}'])
+ext.add_weight_sets([f'electron_SF_2018_error EGamma_SF2D_error {basedir}'])
+ext.finalize()
+lepsf_evaluator = ext.make_evaluator()
+lepsf_keys = lepsf_evaluator.keys()
+
+corrections['elesf_evaluator'] = lepsf_evaluator
+corrections['elesf_keys'] = lepsf_keys
 
 save(corrections, 'corrections.coffea')

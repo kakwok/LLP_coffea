@@ -96,7 +96,7 @@ def read_xsections(filename):
 # curl -O https://raw.githubusercontent.com/kakwok/ZPrimePlusJet/newTF/analysis/ggH/xSections.dat
 corrections['xsections'] = read_xsections("metadata/xSections.dat")
 
-basedir="/uscms/home/jschindl/nobackup/HNL/LLP_coffea/metadata/muonefficiencies/Run2/preUL/"
+basedir="metadata/muonefficiencies/Run2/preUL/"
 ext = extractor()
 year=2018
 ext.add_weight_sets([f'muon_ID_2018_value NUM_TightID_DEN_TrackerMuons_pt_abseta {basedir}/2018/2018_Z/RunABCD_SF_ID.root'])

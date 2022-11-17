@@ -441,6 +441,11 @@ class MyProcessor(processor.ProcessorABC):
         if not isData:
             corrections.add_pileup_weight(weights, events.npu,'2018')
             corrections.add_Wpt_kfactor(weights, events.gWPt, dataset)
+            if self.isElectronChannel:
+                corrections.add_electronSFs(weights, ak.firsts(ele), selectionMasks) 
+            else:
+                corrections.add_muonSFs(weights, ak.firsts(muons), selectionMasks)       
+            
             if isSignal and "rwctau" in dataset:
                 ## expect dataset = "HNL_*_pl{ctau_old}_rwctau{ctau_new}"
                 ctau_old =  float(dataset.split("_")[-2].replace("pl",""))/10     ##ctau in dataset name is in mm

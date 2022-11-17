@@ -72,19 +72,10 @@ def reweightXsec(ctau,mass):
     }
     return np.exp(-1*np.log(ctau)+cof[mass])
 
-
-def add_muonSFs(weights, leadingmuon, year, selection):
-    def mask(w):
-        return np.where(selection.all('good_lepton'), w, 1.)
-
-    yeartag = year
+# Root files from https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2018#Medium_pT_from_15_to_120_GeV
+def add_muonSFs(weights, leadingmuon, selection):
 
     for sf in compiled['muonsf_keys']:
-
-        if yeartag not in sf:
-            continue
-        if 'muon' not in sf:
-            continue
 
         lep_pt = np.array(ak.fill_none(leadingmuon.pt, 0.))
         lep_eta = np.array(ak.fill_none(leadingmuon.eta, 0.))
@@ -96,14 +87,11 @@ def add_muonSFs(weights, leadingmuon, year, selection):
                       
             weights.add(sf, nom, shift, shift=True)
 
+# Root files from: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#Electron_Scale_Factors
 def add_electronSFs(weights, leadingelectron, selection):
-    def mask(w):
-        return np.where(selection.all('good_lepton'), w, 1.)   
-
 
     lep_pt = np.array(ak.fill_none(leadingelectron.pt, 0.))
     lep_eta = np.array(ak.fill_none(leadingelectron.eta, 0.))
-
 
     nom = compiled['elesf_evaluator']["electron_SF_2018_value"](np.abs(lep_eta),lep_pt)
     shift = compiled['elesf_evaluator']["electron_SF_2018_error"](np.abs(lep_eta),lep_pt)

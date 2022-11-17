@@ -73,7 +73,7 @@ def reweightXsec(ctau,mass):
     return np.exp(-1*np.log(ctau)+cof[mass])
 
 # Root files from https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2018#Medium_pT_from_15_to_120_GeV
-def add_muonSFs(weights, leadingmuon, selection):
+def add_muonSFs(weights, leadingmuon):
 
     for sf in compiled['muonsf_keys']:
 
@@ -88,7 +88,7 @@ def add_muonSFs(weights, leadingmuon, selection):
             weights.add(sf, nom, shift, shift=True)
 
 # Root files from: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#Electron_Scale_Factors
-def add_electronSFs(weights, leadingelectron, selection):
+def add_electronSFs(weights, leadingelectron):
 
     lep_pt = np.array(ak.fill_none(leadingelectron.pt, 0.))
     lep_eta = np.array(ak.fill_none(leadingelectron.eta, 0.))

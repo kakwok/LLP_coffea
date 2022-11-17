@@ -7,11 +7,13 @@ import uproot
 from coffea.nanoevents.methods import candidate
 from coffea.nanoevents.methods import vector
 from coffea.nanoevents import NanoEventsFactory, BaseSchema, TreeMakerSchema
+from coffea.lumi_tools import LumiMask
 import time
 
 from coffea.analysis_tools import Weights, PackedSelection
 
 import HNLprocessor.corrections as corrections 
+from  HNLprocessor.corrections import lumiMasks
 from  HNLprocessor.histograms import histograms 
 from  HNLprocessor import util 
 import warnings
@@ -425,14 +427,9 @@ class MyProcessor(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()  ## get from histograms
         dataset = events.metadata['dataset']        
-        
-        #start,stop = events._branchargs['entry_start'],events._branchargs['entry_stop']
-        #events = uproot.lazy(events._tree)
-        #events = events[start:stop]
                 
         isSignal= ak.any(events.gLLP_csc)        
         isData = not(ak.any(events.gLLP_e) or ak.any(events.gLepE))
-        output["sumw"][dataset] += len(events)
         if isSignal:        
             csc = ak.any(events.gLLP_csc,axis=1)
             gLLP_dt = ak.firsts(
@@ -442,9 +439,19 @@ class MyProcessor(processor.ProcessorABC):
             gLLP_dt = ak.values_astype(gLLP_dt, np.int)
             #output['accept'].fill(dataset=dataset,gLLP_csc=ak.firsts(events.gLLP_csc),gLLP_dt=gLLP_dt) ## only 1 LLP
             #events = events[(csc==1)]        
-                                
-                  
-       ## All possible pairs 
+
+        if isData:
+            year = None
+            if "_2016" in dataset: year = "2016"
+            elif "_2017" in dataset: year = "2017"
+            elif "_2018" in dataset: year = "2018" 
+            else:
+                warnings.warn(" %s does not contain one of the strings: [_2016,_2017,_2018]. No golden json mask applied." % dataset, RuntimeWarning)
+            if year is not None:           
+                events = events[lumiMasks[year](events.runNum,events.lumiSec)]
+        output["sumw"][dataset] += len(events)
+
+        ## All possible pairs 
         #cls_lep_pair = ak.cartesian({"cls":cluster_dir,'lep':lep},axis=1,nested=True)
         #dphi_lep_cls = cls_lep_pair.cls.delta_phi(cls_lep_pair.lep)       
 

@@ -96,3 +96,15 @@ def add_electronSFs(weights, leadingelectron):
     nom = compiled['elesf_evaluator']["electron_SF_2018_value"](np.abs(lep_eta),lep_pt)
     shift = compiled['elesf_evaluator']["electron_SF_2018_error"](np.abs(lep_eta),lep_pt)
     weights.add("electron_SF_2018_value", nom, shift, shift=True)
+
+def build_lumimask(filename):
+    from coffea.lumi_tools import LumiMask
+    with importlib.resources.path("HNLprocessor.data", filename) as path:
+        return LumiMask(path)
+
+
+lumiMasks = {
+    "2016": build_lumimask("Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"),
+    "2017": build_lumimask("Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt"),
+    "2018": build_lumimask("Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"),
+}

@@ -115,7 +115,7 @@ lepsf_keys = lepsf_evaluator.keys()
 corrections['muonsf_evaluator'] = lepsf_evaluator
 corrections['muonsf_keys'] = lepsf_keys
 
-basedir="/uscms/home/jschindl/nobackup/HNL/LLP_coffea/metadata/electron/egammaEffi.root"
+basedir="metadata/electron/egammaEffi.root"
 ext = extractor()
 ext.add_weight_sets([f'electron_SF_2018_value EGamma_SF2D {basedir}'])
 ext.add_weight_sets([f'electron_SF_2018_error EGamma_SF2D_error {basedir}'])

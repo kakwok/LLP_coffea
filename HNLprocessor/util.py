@@ -1,5 +1,32 @@
 import matplotlib.patches as patches
+import numpy as np
+import awkward as ak
+## return cross section [pb] of e/mu HNL of mass (x)[GeV] at ct=1m
+def f_1m(x):
+    x0 = np.array([1,2,4,5,7,10])
+    y0 = np.array([13.57,0.4238,0.01289,0.004156,0.0007452,0.000121])    
+    return np.exp(np.poly1d(np.polyfit(x0,np.log(y0),5))(x))
 
+## return a function of f(ctau[mm]) = pb for mass m[GeV]
+def f_xsec(m):
+    def xsec_m(x):
+        return f_1m(m)/(x/1000.)
+    return xsec_m
+## return a function of f(ctau[mm]) = V2  for mass m[GeV]
+def f_v2(m):
+    def ctau_m(x):
+        return f_1m(m)*3.04388863e-05/(x/1000.)
+    return ctau_m
+
+from coffea.nanoevents.methods import vector
+# pack ak array from event
+def pack(events,obj_str):
+    obj  = ak.zip(
+                {k.replace(obj_str,""):getattr(events,k) for k in events.fields if k.startswith(obj_str)}
+                ,with_name="PtEtaPhiMLorentzVector",
+                behavior=vector.behavior
+               )
+    return obj
 def drawCSCsteel(ax,hORv='v'): 
     y_max = ax.get_ylim()[1]
     if hORv=='v':

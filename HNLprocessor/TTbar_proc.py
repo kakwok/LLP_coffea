@@ -59,6 +59,54 @@ class ttbarProcessor(MyProcessor):
 
         return bjets
         
+    def buildSelectionMasks(self,events,good_lep,cluster,clusterMasks,dt_cluster,dt_clusterMasks,bjets):
+        selectionMasks =   {}
+        selectionMasks['Acceptance_csc']   =ak.firsts(events.gLLP_csc)==1
+        selectionMasks['Acceptance_dt']=ak.firsts(events.gLLP_dt)==1
+        selectionMasks['METfilters']   =events.Flag2_all==True
+        selectionMasks['trigger_ele']  =events.SingleEleTrigger==True
+        selectionMasks['trigger_mu']   =events.SingleMuonTrigger==True
+        selectionMasks['good_lepton']  =ak.num(good_lep,axis=1)==1
+        selectionMasks['MET']          =events.metEENoise>=30
+        selectionMasks['n_cls']        =ak.num(cluster,axis=1)>=1
+        selectionMasks['n_cls_dt']     =ak.num(dt_cluster,axis=1)>=1
+        selectionMasks['n_bjets']      =ak.num(bjets,axis=1)==2
+
+        clusterMasks["neg_ME11_12_veto"] = ~clusterMasks['ME11_12_veto']  #make veto mask
+        CSC_sel_ABCD = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID"]
+        CSC_sel_OOT  = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "OOT_timeCut","timeSpreadCut","ClusterID"]
+        CSC_sel_negME11 = ["neg_ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID"]
+
+        selectionMasks['cls_ABCD']  = buildMask(clusterMasks,CSC_sel_ABCD)
+        selectionMasks['cls_OOT']   = buildMask(clusterMasks,CSC_sel_OOT)
+        selectionMasks['cls_negME11']   = buildMask(clusterMasks,CSC_sel_negME11)
+
+        dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
+        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
+
+        selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
+        selectionMasks['dt_cls_ABCD'] = buildMask(dt_clusterMasks,DT_sel_ABCD)         
+        selectionMasks['dt_cls_negMB1'] = buildMask(dt_clusterMasks,DT_sel_negMB1)         
+
+        #bjets selection
+        selectionMasks['bjet_cls_dr']    =  ak.all(
+                                                ak.all(delta_r_pairs({"cls":cluster,"bjets":bjets})[0]>0.4,axis=2) ## all pairs dr(bjets,cls)>0.4
+                                            ,axis=1) # apply to all bjets in the events 
+        selectionMasks['bjet_cls_dr_p8']    =  ak.all(
+                                                ak.all(delta_r_pairs({"cls":cluster,"bjets":bjets})[0]>0.8,axis=2) ## all pairs dr(bjets,cls)>0.4
+                                            ,axis=1) # apply to all bjets in the events 
+
+        selectionMasks['bjet_dt_cls_dr'] =  ak.all(
+                                                ak.all(delta_r_pairs({"cls":dt_cluster,"bjets":bjets})[0]>0.4,axis=2) ## all dr(bjets,cls)>0.4
+                                            ,axis=1)# apply to all bjets in the events 
+        selectionMasks['bjet_dt_cls_dr_p8'] =  ak.all(
+                                                ak.all(delta_r_pairs({"cls":dt_cluster,"bjets":bjets})[0]>0.8,axis=2) ## all dr(bjets,cls)>0.4
+                                            ,axis=1)# apply to all bjets in the events 
+
+        return selectionMasks
+
 
     def process(self, events):
         output = self.accumulator.identity()  ## get from histograms
@@ -90,44 +138,8 @@ class ttbarProcessor(MyProcessor):
         dt_clusterMasks = self.selectDTcluster(dt_cluster,events)
 
         #dictionary of cutName:masks
-        selectionMasks =   {}
+        selectionMasks =   self.buildSelectionMasks(events,cluster,clusterMasks,dt_cluster,dt_clusterMasks,bjets)
 
-        selectionMasks['Acceptance_csc']   =ak.firsts(events.gLLP_csc)==1
-        selectionMasks['Acceptance_dt']=ak.firsts(events.gLLP_dt)==1
-        selectionMasks['METfilters']   =events.Flag2_all==True
-        selectionMasks['trigger_ele']  =events.SingleEleTrigger==True
-        selectionMasks['trigger_mu']   =events.SingleMuonTrigger==True
-        selectionMasks['good_lepton']  =ak.num(good_lep,axis=1)==1
-        selectionMasks['MET']          =events.metEENoise>=30
-        selectionMasks['n_cls']        =ak.num(cluster,axis=1)>=1
-        selectionMasks['n_cls_dt']     =ak.num(dt_cluster,axis=1)>=1
-        selectionMasks['n_bjets']      =ak.num(bjets,axis=1)==2
-
-        clusterMasks["neg_ME11_12_veto"] = ~clusterMasks['ME11_12_veto']  #make veto mask
-        CSC_sel_ABCD = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID"]
-        CSC_sel_OOT  = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "OOT_timeCut","timeSpreadCut","ClusterID"]
-        CSC_sel_negME11 = ["neg_ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID"]
-
-        selectionMasks['cls_ABCD']  = buildMask(clusterMasks,CSC_sel_ABCD)
-        selectionMasks['cls_OOT']   = buildMask(clusterMasks,CSC_sel_OOT)
-        selectionMasks['cls_negME11']   = buildMask(clusterMasks,CSC_sel_negME11)
-
-        dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT"]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
-        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
-
-        selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
-        selectionMasks['dt_cls_ABCD'] = buildMask(dt_clusterMasks,DT_sel_ABCD)         
-        selectionMasks['dt_cls_negMB1'] = buildMask(dt_clusterMasks,DT_sel_negMB1)         
-
-        #bjets selection
-        selectionMasks['bjet_cls_dr']    =  ak.all(
-                                                ak.all(delta_r_pairs({"cls":cluster,"bjets":bjets})[0]>0.4,axis=2) ## all pairs dr(bjets,cls)>0.4
-                                            ,axis=1) # apply to all bjets in the events 
-        selectionMasks['bjet_dt_cls_dr'] =  ak.all(
-                                                ak.all(delta_r_pairs({"cls":dt_cluster,"bjets":bjets})[0]>0.4,axis=2) ## all dr(bjets,cls)>0.4
-                                            ,axis=1)# apply to all bjets in the events 
 
         if self.isElectronChannel:
             #preselections = ['trigger_ele','MET',"METfilters",'good_lepton',"n_bjets","bjet_cls_dr","bjet_dt_cls_dr"]

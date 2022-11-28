@@ -6,17 +6,82 @@ import pickle
 import json
 from optparse import OptionParser
 
+def writeBinProcSection(text_file,signal_rate,bkg_proc):
+    nBins = 4  # abcd bins
+    procs = {} # name:[a,b,c,d]
+    procs.update(signal_rate)
+    procs.update(bkg_proc)
+
+    binLine='bin'
+    procNameLine = 'process '
+    procNumLine  = 'process '
+    rateNumLine  = 'rate '
+    
+    # one item per non-zero rate
+    for i,Bin in enumerate(["chA","chB","chC","chD"]):
+        for j,(procName,rates) in enumerate(procs.items()):
+            i_rate = rates[i] #rate of proc j in bin i
+            if i_rate>=0:
+                isSignal      = -1 if (procName in signal_rate.keys()) else 1 # negative proc for signal
+                binLine      +=' \t'+Bin
+                procNameLine +=' \t'+procName
+                procNumLine  +=' \t'+str((j+1)*(isSignal))
+                if procName =="bkg":
+                    rateNumLine  +=' \t 1'                                  # set rate=1 for ABCD bkg
+                else:
+                    rateNumLine  +=' \t {0:e}'.format(i_rate)
+                
+    text_file.write(binLine+"\n") 
+    text_file.write(procNameLine+"\n") 
+    text_file.write(procNumLine+"\n") 
+    text_file.write(rateNumLine+"\n") 
+    text_file.write('------------------------------ \n')
+
+def writeUncSection(text_file,signal_rate,bkg_proc,lnN_unc):
+    ### unc = {"proc_uncX":[a,b,c,d]}
+
+    ## match num. of proc
+    procs = {} # name:[a,b,c,d]
+    procs.update(signal_rate)
+    procs.update(bkg_proc)
+
+    for unc_name,unc_arr in lnN_unc.items():
+        unc_text = unc_name+' \t lnN'
+        if not np.any([k in unc_name for k in procs.keys()]): continue                  #skip unc that does not match any proc
+        #match with all proc.
+        for i,Bin in enumerate(["chA","chB","chC","chD"]):
+            for j,(procName,rates) in enumerate(procs.items()):   
+                i_rate = rates[i] #rate of proc j in bin i
+                if i_rate>=0:                                                           #valid procs 
+                    if procName in unc_name:                                            #match unc. with proc name
+                        if unc_arr[i] ==0:
+                            unc_text += '\t - '                                         #use - for 0 unc.
+                        elif type(unc_arr[i])==type("") and len(unc_arr[i].split("/"))>1:
+                            unc_text += ' \t '+unc_arr[i]                               #use string for asym unc
+                        else:
+                            unc_text += ' \t '+str(unc_arr[i]+1)                        #simple lnN
+                    else:
+                        unc_text += '\t - '                      #not this proc
+        text_file.write(unc_text + ' \n')                        # write the line
+
+
 def make_datacard_2sig(outDataCardsDir,modelName,  signal_rate, norm, bkg_rate, observation, bkg_unc,  sig_unc):
-    a,b,c,d = bkg_rate[0], bkg_rate[1], bkg_rate[2], bkg_rate[3]
+    ## bkg rate        = ABCD background        {bkg_name:[a,b,c,d]}
+    ## signal          = ABCD signal            {sig_name:[a,b,c,d]}
+    ## bkg_unc         = bkg unc               {proc_name+"_uncX":[a,b,c,d]}
+    ## sig_unc         = bkg unc               {sig_name+"_unc":[a,b,c,d]}
+    #a,b,c,d = bkg_rate[0], bkg_rate[1], bkg_rate[2], bkg_rate[3]
+    a,b,c,d = bkg_rate['bkg'][0], bkg_rate['bkg'][1], bkg_rate['bkg'][2], bkg_rate['bkg'][3]
     #c1 = a/b
     #c1 = b/a        ## DT convention
     #c2 = c/b
-    nSig = len(signal_rate.keys())
+    #nSig = len(signal_rate.keys())
+    nProc = len(signal_rate.keys())+len(bkg_rate.keys())-1
     text_file = open(outDataCardsDir+modelName+".txt", "w")
     text_file.write('# signal norm {0} \n'.format(norm))
 
     text_file.write('imax {0} \n'.format(4))
-    text_file.write('jmax {0} \n'.format(nSig))
+    text_file.write('jmax {0} \n'.format(nProc))
     text_file.write('kmax * \n')
     text_file.write('shapes * * FAKE \n')
 
@@ -25,18 +90,7 @@ def make_datacard_2sig(outDataCardsDir,modelName,  signal_rate, norm, bkg_rate, 
     text_file.write('bin \t chA \t chB \t chC \t chD \n')
     text_file.write('observation \t {0:6.2f} \t {1:6.2f} \t {2:6.2f} \t {3:6.2f} \n'.format(observation[0],observation[1],observation[2],observation[3]))
     text_file.write('------------------------------ \n')
-    text_file.write('bin '+'\t chA ' * (1+nSig) + '\t chB ' * (1+nSig) +'\t chC '*(1+nSig) +'\t chD '*(1+nSig) +'\n')
-    process_name = '\t '+ (' \t ').join(list(signal_rate.keys())) + '\t bkg '
-    text_file.write('process ' + process_name * 4 + '\n')
-    process_number = '\t '+ (' \t ').join(list((np.arange(nSig)*-1).astype(str))) + '\t 1'
-    text_file.write('process ' + process_number * 4 + '\n')
-    rate_string = 'rate'
-    for i in range(4):# 4 bins
-        for k,v in signal_rate.items():
-            rate_string +='\t {0:e} '.format(v[i])
-        rate_string += '\t 1 '
-    text_file.write(rate_string+'\n')
-    text_file.write('------------------------------ \n')
+    writeBinProcSection(text_file,signal_rate,bkg_rate)
     text_file.write('NA_val      extArg         {0}   [{0},{0}] \n'.format(a))
     text_file.write('NB_val      extArg         {0}   [{0},{0}] \n'.format(b))
     text_file.write('NC_val      extArg         {0}   [{0},{0}] \n'.format(c))
@@ -49,18 +103,7 @@ def make_datacard_2sig(outDataCardsDir,modelName,  signal_rate, norm, bkg_rate, 
     text_file.write('ND  rateParam       chD     bkg      (@0*@2/@1)                     NA,NB,NC ## D=A*C/B\n')
     text_file.write('norm  rateParam       *     ggH      1 \n')
     #### uncertainties ####
-    for bkg_name,bkg_uncs in bkg_unc.items():
-        unc_text = bkg_name+' \t lnN'
-        for j in range(4):#bin
-            for sig_name,data in signal_rate.items(): #signals
-                unc_text += '\t - '
-            # write bkg:
-            if bkg_uncs[j] == 0.0:unc_text += ' \t -'
-            elif type(bkg_uncs[j])==type("") and len(bkg_uncs[j].split("/"))>1: # asym unc
-             unc_text += ' \t '+bkg_uncs[j]
-            else:
-             unc_text += ' \t '+str(bkg_uncs[j]+1)
-        text_file.write(unc_text + ' \n')
+    writeUncSection(text_file,signal_rate,bkg_rate,bkg_unc)
 
 
 def calABCD(listABCD,eff_nhit,eff_dphi):
@@ -214,9 +257,12 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None):
         bkg     = loadbkg("../HNL_histograms_Feb23_muons_data.pickle",True,cut,debug)
         signals = loadhist("../HNL_histograms_Feb23_muons_signal.pickle",True,cut,debug)
         signals.update( loadhist("../HNL_histograms_Mar1_muons_signal.pickle",True,cut,debug))
+        #bkg     = loadbkg("../HNL_histograms_Nov17_muons_all.pickle",True,cut,debug)
     else:
         bkg     = loadbkg("../HNL_histograms_Feb3_electrons.pickle",False,cut,debug)
         signals = loadhist("../HNL_histograms_Apr1_ele_signal.pickle",False,cut,debug)
+        #bkg     = loadbkg("../HNL_histograms_Nov17_ele_all.pickle",True,cut,debug)
+        #signals = loadhist("../HNL_histograms_Nov17_ele_all.pickle",True,cut,debug)
 
     #data = {**bkg,**signals} 
     data = {}
@@ -358,9 +404,28 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
     norm = 100.0    # 1% BR
     suffix = ""
 
+
+    #ZmumuCR = CSC:73      DT:172  (200,130)
+    #ZmumuCR = CSC:54      DT:130  (220,150)
+    
+
+    bkg_proc_CSC= {
+     #   "Zmumu_CSC":[-1,-1,-1,2.07], ## 2.5% TF 
+        #"Zmumu_CSC":[-1,-1,-1,4.68], ## 5.6% TF 
+        "Zmumu_CSC":[-1,-1,-1,3.02], ## 5.6% TF, 220
+    }
+    bkg_proc_DT= {
+     #   "Zmumu_DT":[-1,-1,-1,1.95],    # 1.0% TF
+        #"Zmumu_DT":[-1,-1,-1,2.56],     # 1.3% TF
+        "Zmumu_DT":[-1,-1,-1,1.69],     # 1.3% TF, 150
+    }
+    # procName_uncName
     bkg_unc = {
-        "bkg_sys_A":[0.5,0,0 ,0  ],
-        "bkg_sys_D":[0  ,0,0 ,0.5],
+        "bkg_sys_D":[0  ,0 ,0 ,0.5],
+        #"Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.32],      
+        #"Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.2 ],
+        "Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.25],    
+        "Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.23],
     }
     sig_unc = {
         "clus":{
@@ -372,24 +437,30 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
     }
     with open(f_yield,'r') as f:
         data = json.load(f)
-        bkg_rate_CSC = data['bkg']["CSC"]
-        bkg_rate_DT = data['bkg']["DT"]
+        bkg_rate_CSC = {}       # {bkg: [a,b,c,d]}
+        bkg_rate_CSC.update({"bkg":data['bkg']["CSC"]})          # {bkg: [a,b,c,d]}
+        bkg_rate_CSC.update(bkg_proc_CSC)                        # add other bkg 
+        bkg_rate_DT = {}       # {bkg: [a,b,c,d]}
+        bkg_rate_DT.update({"bkg":data['bkg']["DT"]})           # {bkg: [a,b,c,d]}
+        bkg_rate_DT.update(bkg_proc_DT)                         # add other bkg 
         for name,signal in data.items():
+            #if not ("3p1" in name or "3p2" in name):  continue
             if suffix:
                 name = name+suffix
             #norm = 1
             norm = signal["norm"]
             sigRate = {"ggH":np.array(signal["CSC"])/norm }
-            obs = bkg_rate_CSC
+            obs = bkg_rate_CSC['bkg']
+            obs[-1] = bkg_rate_CSC['bkg'][0]*bkg_rate_CSC['bkg'][2]/bkg_rate_CSC['bkg'][1]  ## force D=A*C/B
             make_datacard_2sig(outdir,name+"_CSC", sigRate, norm, bkg_rate_CSC, obs, bkg_unc,  sig_unc)
             sigRate = {"ggH":np.array(signal["DT"]) /norm}
-            obs = bkg_rate_DT
+            obs = bkg_rate_DT['bkg']
+            obs[-1] = bkg_rate_DT['bkg'][0]*bkg_rate_DT['bkg'][2]/bkg_rate_DT['bkg'][1]  ## force D=A*C/B
             make_datacard_2sig(outdir,name+"_DT", sigRate, norm, bkg_rate_DT, obs, bkg_unc,  sig_unc)
    
             def Run(cmd,test=False):
                 print(cmd)
                 if not test: os.system(cmd)
-
             csc_limit = "combine -M AsymptoticLimits {odir}{name}_CSC.txt -n _{name}_CSC --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
             
             Run(csc_limit,test)
@@ -407,7 +478,11 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
                
 import sys
 sys.path.insert(0,"../")
-from HNLprocessor.util import f_1m
+#from HNLprocessor.util import f_1m   ## Move to util if possible
+def f_1m(x):
+    x0 = np.array([1,2,4,5,7,10])
+    y0 = np.array([13.57,0.4238,0.01289,0.004156,0.0007452,0.000121])    
+    return np.exp(np.poly1d(np.polyfit(x0,np.log(y0),5))(x))
 
 def f_xsec(m):
     def xsec_m(x):
@@ -469,12 +544,11 @@ if __name__ == "__main__":
     parser.add_option('--loadhist', dest='loadhist', action='store_true',default = False, help='Load result from pickle')
     parser.add_option('-f', dest='fin', default = "", help='pickle name ')
     parser.add_option('--test', dest='test', action='store_true',default = False, help='test writing cards')
+    parser.add_option('--dryRun', dest='dryRun', action='store_true',default = False, help='dryRun')
     parser.add_option('--loadbkg', dest='loadbkg', action='store_true',default = False, help='Load bkg from pickle')
     parser.add_option('--writeYields', dest='writeYields', action='store_true',default = False, help='write yield fields')
     parser.add_option('--muon', dest='muon', action='store_true',default = False, help='make muon datacard')
     (options, args) = parser.parse_args()
-
-
 
     dphi_lepcuts = np.linspace(0,np.pi,31)[1:-2]
     #[0.10471976 0.20943951 0.31415927 0.41887902 0.52359878 0.62831853
@@ -498,9 +572,10 @@ if __name__ == "__main__":
     elif options.test:
         print("Testing script ")
         outdir = "./test/"   ### 
-        cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(120,dphi_lepcuts[-4],None)}
+        cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(130,dphi_lepcuts[-4],None)}
         isMuon=True
-        f_yield = "yields.json"
+        #f_yield = "yields.json"
+        f_yield = "./combine/HNL_datacards/muon_v6/yields.json"
         makeAllcards(f_yield,outdir,"",True)
     else:
         ### electron chan using muon cuts
@@ -522,40 +597,59 @@ if __name__ == "__main__":
         #cut = {"CSC":(160,dphi_lepcuts[-4],None), "DT":(100,dphi_lepcuts[-4],None)}
         #isMuon=False
         #########################################
+        #outdir = "./combine/HNL_datacards/ele_v6/"   ###  v6 == v5 + 50% unc + toysFreq
+        #cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(130,dphi_lepcuts[-4],None)}
+        #########################################
+        #outdir = "./combine/HNL_datacards/ele_v7/"   ###  v7 == v6 with dphilep=2.82
+        #cut = {"CSC":(200,dphi_lepcuts[-2],None), "DT":(130,dphi_lepcuts[-2],None)}
+        #########################################
         print("Working on electron Channel: ")
-        outdir = "./combine/HNL_datacards/ele_v6/"   ###  v5 == v4 + 50% unc + toysFreq
-        cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(130,dphi_lepcuts[-4],None)}
+        outdir = "./combine/HNL_datacards/ele_v8/"   ###  v8, full run 2  
+        cut = {"CSC":(220,2.8,None), "DT":(130,2.8,None)}
         isMuon=False
+
         f_yield = outdir+"yields.json"
         shifts = [
             {"m_src":4.0,"m_target":3.0},
+            {"m_src":4.0,"m_target":3.1},
+            {"m_src":4.0,"m_target":3.2},
             {"m_src":4.0,"m_target":3.5},
         ]
-        if options.writeYields: writeYields(cut,isMuon,f_yield,False,shifts) 
-        else:   makeAllcards(f_yield,outdir)
+        if not options.muon:
+            if options.writeYields: writeYields(cut,isMuon,f_yield,False,shifts) 
+            else:   makeAllcards(f_yield,outdir,"",options.dryRun)
         #########################################
         #########################################
         #outdir = "./combine/HNL_datacards/muon_v3/"
         #cut = {"CSC":(220,dphi_lepcuts[9],1.0), "DT":(110,dphi_lepcuts[9],1.0)}
-        #isMuon=True 
         #########################################
         #outdir = "./combine/HNL_datacards/muon_v2/"
         #cut = {"CSC":(250,dphi_lepcuts[9],1.0), "DT":(140,dphi_lepcuts[9],1.0)}
-        #isMuon=True 
         #########################################
         #outdir = "./combine/HNL_datacards/muon_v1/"
         #cut = {"CSC":(220,dphi_lepcuts[-10],0.7), "DT":(110,dphi_lepcuts[-8],0.7)}
-        #isMuon=True 
         #########################################
         #outdir = "./combine/HNL_datacards/muon_v5/"   ### v5 == v4 + 50% unc + toysFreq
         #cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(120,dphi_lepcuts[-4],None)}
-        #isMuon=True
+        #########################################
+        #outdir = "./combine/HNL_datacards/muon_v6/"   ### v6 == v4 + 50% unc in D+ toysFreq
+        #cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(130,dphi_lepcuts[-4],None)}
+        #########################################
+        #outdir = "./combine/HNL_datacards/muon_v7/"   ### v7 == v5 + but with 2.82
+        #cut = {"CSC":(200,dphi_lepcuts[-2],None), "DT":(130,dphi_lepcuts[-2],None)}
+        #########################################
+        #outdir = "./combine/HNL_datacards/muon_v8/"   ### v8 == v7 + Zmumubkg (TF 2.5%/1%) 
+        #outdir = "./combine/HNL_datacards/muon_v9/"   ### v9 == v7 + Zmumubkg (TF 5.6%/1.3%) 
+        #cut = {"CSC":(200,dphi_lepcuts[-2],None), "DT":(130,dphi_lepcuts[-2],None)}
+        #outdir = "./combine/HNL_datacards/muon_v10/"   ### v10 == v9 + Zmumubkg (TF 5.6%/1.3%) at 150/220 
+        #cut = {"CSC":(220,dphi_lepcuts[-2],None), "DT":(150,dphi_lepcuts[-2],None)}
         #########################################
         print("Working on muon Channel: ")
-        outdir = "./combine/HNL_datacards/muon_v6/"   ### v5 == v4 + 50% unc + toysFreq
-        cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(130,dphi_lepcuts[-4],None)}
+        outdir = "./combine/HNL_datacards/muon_v11/"   ### v11 , full run 2 
+        cut = {"CSC":(220,2.8,None), "DT":(130,2.8,None)}
         isMuon=True
 
         f_yield = outdir+"yields.json"
-        if options.writeYields: writeYields(cut,isMuon,f_yield,False,shifts) 
-        else:            makeAllcards(f_yield,outdir)
+        if options.muon:
+            if options.writeYields: writeYields(cut,isMuon,f_yield,False,shifts) 
+            else:            makeAllcards(f_yield,outdir,"",options.dryRun)

@@ -5,6 +5,7 @@ nMinus1_axis =  hist.Bin('Nminus1','i-th cut',20,0,20)
 dataset_axis = hist.Cat("dataset", "Dataset")
 cutFlow_axis = hist.Cat("cutflow", "cutflow")
 region_axis  = hist.Cat("region", "region")
+syst_axis  = hist.Cat("syst", "syst")
 wpt_axis = hist.Bin("gWPt","W Pt[GeV]",
             np.array([   0.,    5.,   10.,   15.,   20.,   25.,   30.,   35.,   40.,
                         45.,   50.,   60.,   70.,   80.,   90.,  100.,  125.,  150.,
@@ -47,10 +48,10 @@ histograms ={
                 hist.Bin("ClusterTimeSpread", "ClusterTimeSpread[ns]", 20, 0, 40),
             ),
             "ClusterJetVetoPt": hist.Hist("Events",dataset_axis, region_axis,
-                hist.Bin("ClusterJetVetoPt", "Matched Jet Pt[GeV]", 30, 0, 60),
+                hist.Bin("ClusterJetVetoPt", "Matched Jet Pt[GeV]", 50, 0, 100),
             ),
             "ClusterMuonVetoPt": hist.Hist("Events",dataset_axis, region_axis,
-                hist.Bin("ClusterMuonVetoPt", "Matched Muon Pt[GeV]", 30, 0, 60),
+                hist.Bin("ClusterMuonVetoPt", "Matched Muon Pt[GeV]", 50, 0, 100),
             ),
        
             "dphi_cluster_csc": hist.Hist("Events",dataset_axis,
@@ -58,7 +59,13 @@ histograms ={
                 hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
                 hist.Bin("dphi_lep", r'$\Delta\phi$(cluster,lep)', 32, 0, 3.2),
                 hist.Bin("dphi_MET", r'$\Delta\phi$(cluster,MET)', 32, 0, 3.2),
+            ),
+            "dphi_cluster_syst": hist.Hist("Events",dataset_axis,
+                syst_axis,                                          
+                hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
+                hist.Bin("dphi_lep", r'$\Delta\phi$(cluster,lep)', 32, 0, 3.2),
             ), 
+ 
             "ClusterSize_dt": hist.Hist("Events",dataset_axis,   
                 region_axis,
                 hist.Bin("ClusterSize", r"$N_{rechits}$", 50, 0, 2000),
@@ -80,17 +87,38 @@ histograms ={
                 hist.Bin("ClusterMB1", "number of MB1 hits", 20, 0, 20),
             ),
             "ClusterJetVetoPt_dt": hist.Hist("Events",dataset_axis, region_axis,
-                hist.Bin("ClusterJetVetoPt", "Matched Jet Pt[GeV]", 30, 0, 60),
+                hist.Bin("ClusterJetVetoPt", "Matched Jet Pt[GeV]", 50, 0, 100),
             ),
             "ClusterMuonVetoPt_dt": hist.Hist("Events",dataset_axis, region_axis,
-                hist.Bin("ClusterMuonVetoPt", "Matched Muon Pt[GeV]", 30, 0, 60),
+                hist.Bin("ClusterMuonVetoPt", "Matched Muon Pt[GeV]", 50, 0, 100),
             ),
+            "Cluster_runNum_dt": hist.Hist("Events",dataset_axis,
+                region_axis,                                          
+                hist.Bin("ClusterSize", r"$N_{rechits}$", 50, 0, 500),
+                hist.Bin("RunNumber", "RunNumber", 100, 272000, 276300), ## for 2016 BC
+            ), 
+            "Cluster_rz_dt": hist.Hist("Events",dataset_axis,
+                region_axis,                                          
+                hist.Bin("R", "R[cm]", 40, 400, 800),
+                hist.Bin("Z", "Z[cm]", 100, -600 ,600), ## for 2016 BC
+            ), 
+            "Cluster_phi_dt": hist.Hist("Events",dataset_axis,
+                region_axis,                                          
+                hist.Bin("phi", "cluster phi", 64, -3.2, 3.2),
+            ), 
+
             "dphi_cluster_dt": hist.Hist("Events",dataset_axis,
                 region_axis,                                          
                 hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
                 hist.Bin("dphi_lep", r'$\Delta\phi$(cluster,lep)', 32, 0, 3.2),
                 hist.Bin("dphi_MET", r'$\Delta\phi$(cluster,MET)', 32, 0, 3.2),
             ), 
+            "dphi_cluster_dt_syst": hist.Hist("Events",dataset_axis,
+                syst_axis,                                          
+                hist.Bin("ClusterSize", r"$N_{rechits}$", 100, 0, 1000),
+                hist.Bin("dphi_lep", r'$\Delta\phi$(cluster,lep)', 32, 0, 3.2),
+            ), 
+
             ## reco var.
             "nLeptons": hist.Hist("Events",dataset_axis,
                 hist.Bin("nLeptons", "nLeptons", 5, 0, 5),

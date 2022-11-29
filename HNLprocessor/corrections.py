@@ -34,9 +34,13 @@ def add_pileup_weight(weights, nPU, year='2017', dataset=None):
 
 def add_Wpt_kfactor(weights, gWPt, dataset):
     if dataset=="HNL,$m_N$=5" or "HNL" in dataset :
-        weights.add("Wpt", compiled["wpt"](gWPt))
+        weights.add("Wpt", compiled["wpt"](gWPt)
+                            , compiled["wptUp"](gWPt)
+                            , compiled["wptDown"](gWPt))
     elif dataset=="WJetsToLNu" or  "WJets" in dataset:
-        weights.add("Wpt", compiled["wpt_WJ"](gWPt))
+        weights.add("Wpt"    , compiled["wpt_WJ"](gWPt)
+                             ,compiled["wpt_WJUp"](gWPt)
+                             ,compiled["wpt_WJDown"](gWPt))
         return
 
 def add_ctau_weight(weights,llp_ctau, ctau_old, ctau_new):

@@ -62,8 +62,8 @@ if __name__ == "__main__":
             if channel=="ele" and region =="DT":
                 sizeCuts = np.array([80,90,100,110,120,130])
             elif channel=="muon" and region =="DT":
-                #sizeCuts = np.array([80,90,100,110,120,130])
-                sizeCuts = np.array([140])
+                sizeCuts = np.array([80,90,100,110,120,130])
+                #sizeCuts = np.array([130])
             elif channel=="ele" and region =="CSC":
                 sizeCuts = np.array([140,160,180,200,220])
             elif channel=="muon" and region =="CSC":
@@ -73,9 +73,11 @@ if __name__ == "__main__":
             #dphi_lepCuts = dphi_lepAxis[(dphi_lepAxis>1.0)& (dphi_lepAxis<2.5)]
             #dphi_METCuts = np.array([0.6,0.7,0.8,0.9,1.0])
             #dphi_lepCuts = dphi_lepAxis[(dphi_lepAxis>1.0)& (dphi_lepAxis<3.0)][::3]
-            dphi_lepCuts = np.array([1.04719755, 1.36135682, 1.67551608, 1.98967535, 2.30383461,  2.61799388, 2.72271363, 2.82743339, 2.93215314])
+            #dphi_lepCuts = np.array([1.04719755, 1.36135682, 1.67551608, 1.98967535, 2.30383461,  2.61799388, 2.72271363, 2.82743339, 2.93215314])
+            dphi_lepCuts = np.array([2.82743339])
             #dphi_METCuts = np.array([1.0,1.1,1.2,1.3,1.4])
-            dphi_METCuts = np.array([0.7,1.0,None])
+            #dphi_METCuts = np.array([0.7,1.0,None])
+            dphi_METCuts = np.array([None])
             #dphi_METCuts = np.array([1.0])
             #dphi_METCuts = np.array([1.0,1.4,1.6,2.0])
             for cut in cartesian_product(sizeCuts,dphi_lepCuts,dphi_METCuts):
@@ -96,8 +98,13 @@ if __name__ == "__main__":
                 else: 
                     with open(outf,'r') as f:
                         data = json.load(f)
-                    bkg_rate_CSC = data['bkg']["CSC"]
-                    bkg_rate_DT = data['bkg']["DT"]
+                    bkg_rate_CSC = {}       # {bkg: [a,b,c,d]}
+                    bkg_rate_CSC.update({"bkg":data['bkg']["CSC"]})          # {bkg: [a,b,c,d]}
+                    #bkg_rate_CSC.update(bkg_proc_CSC)                        # add other bkg 
+                    bkg_rate_DT = {}       # {bkg: [a,b,c,d]}
+                    bkg_rate_DT.update({"bkg":data['bkg']["DT"]})           # {bkg: [a,b,c,d]}
+                    #bkg_rate_DT.update(bkg_proc_DT)                         # add other bkg 
+
                    
                     for name,signal in data.items():
                         if not ("HNL" and "mHNL4p0_pl1000") in name: continue
@@ -108,32 +115,36 @@ if __name__ == "__main__":
                         from writeABCD import make_datacard_2sig 
                         if region == "CSC":    
                             sigRate = {"ggH":np.array(signal["CSC"])/norm }
-                            obs = bkg_rate_CSC
-                            obs[-1] = bkg_rate_CSC[0]*bkg_rate_CSC[2]/bkg_rate_CSC[1]  ## force D=A*C/B
+                            obs = bkg_rate_CSC['bkg']
+                            obs[-1] = bkg_rate_CSC['bkg'][0]*bkg_rate_CSC['bkg'][2]/bkg_rate_CSC['bkg'][1]  ## force D=A*C/B
                             make_datacard_2sig(outdir,name+"_CSC", sigRate, norm, bkg_rate_CSC, obs, bkg_unc,  sig_unc)
     
-                            csc_limit = "combine -M AsymptoticLimits {odir}{name}_CSC.txt -n _{name}_CSC --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
+                            #csc_limit = "combine -M AsymptoticLimits {odir}{name}_CSC.txt -n _{name}_CSC --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
+                            csc_limit = "combine -M Significance {odir}{name}_CSC.txt -n _{name}_CSC --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq --expectSignal=1".format(name=name,odir=outdir,norm=1)
                             print(csc_limit)
                             if not options.dryRun:
                                 os.system(csc_limit)
-                                os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_CSC",outdir))
+                                #os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_CSC",outdir))
+                                os.system("mv higgsCombine_%s.Significance.mH120.root %s"%(name+"_CSC",outdir))
                         if region == "DT":    
-                            dt_limit = "combine -M AsymptoticLimits {odir}{name}_DT.txt -n _{name}_DT --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
+                            #dt_limit = "combine -M AsymptoticLimits {odir}{name}_DT.txt -n _{name}_DT --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
+                            dt_limit = "combine -M Significance {odir}{name}_DT.txt -n _{name}_DT --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq --expectSignal=1".format(name=name,odir=outdir,norm=1)
                             print(dt_limit)
                             sigRate = {"ggH":np.array(signal["DT"]) /norm}
-                            obs = bkg_rate_DT
-                            obs[-1] = bkg_rate_DT[0]*bkg_rate_DT[2]/bkg_rate_DT[1]
+                            obs = bkg_rate_DT['bkg']
+                            obs[-1] = bkg_rate_DT['bkg'][0]*bkg_rate_DT['bkg'][2]/bkg_rate_DT['bkg'][1]  ## force D=A*C/B
                             make_datacard_2sig(outdir,name+"_DT", sigRate, norm, bkg_rate_DT, obs, bkg_unc,  sig_unc)
     
                             if not options.dryRun:
                                 os.system(dt_limit)
-                                os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_DT",outdir))
+                                #os.system("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_DT",outdir))
+                                os.system("mv higgsCombine_%s.Significance.mH120.root %s"%(name+"_DT",outdir))
             
                         if options.combine:
                             cmd = "python combination.py CSC={odir}{name}_CSC.txt DT={odir}{name}_DT.txt {odir}{name}_comb.txt".format(name=name,odir=outdir)
                             print(cmd)
-                            if not options.dryRun:
-                                os.system(cmd)
+                            #if not options.dryRun:
+                            #    os.system(cmd)
                             cmd = "combine -M AsymptoticLimits {odir}{name}_comb.txt -n _{name}_comb --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
                             print(cmd)
                             if not options.dryRun:

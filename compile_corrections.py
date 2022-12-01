@@ -64,16 +64,21 @@ corrections['2018_pileupweight_puDown'] = pileup_corr_puDown
 with uproot.open("./metadata/WPT_v2.root") as f:
     wpt_LO_HNL = f['h_HNL']
     wpt_LO_WJ  = f['h_WJ']
-with uproot3.open("./metadata/wp-13tev-cms.root") as f:
+with uproot.open("./metadata/wp-13tev-cms.root") as f:
     wpt_NLO = f['s_qt']
 
-wpt_NLO_normalized = wpt_NLO.values/wpt_NLO.values.sum()
+wpt_NLO_normalized = wpt_NLO.values()/wpt_NLO.values().sum()
+wpt_NLO_err        = wpt_NLO.errors()/wpt_NLO.values().sum()
 wpt_LO_HNL_normalized = wpt_LO_HNL.values()/wpt_LO_HNL.values().sum()
 wpt_LO_WJ_normalized = wpt_LO_WJ.values()/wpt_LO_WJ.values().sum()
 
 #ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
 corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
 corrections['wpt_WJ'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
+corrections['wpt_WJUp'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
+corrections['wpt_WJDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
 
 def read_xsections(filename):
     out = {}
@@ -81,7 +86,7 @@ def read_xsections(filename):
         for line in fin:
             line = line.strip()
             if len(line) == 0 or line[0] == '#':
-                continue
+                continue 
             dataset, xsexpr, *_ = line.split()
             try:
                 xs = float(numexpr.evaluate(xsexpr))

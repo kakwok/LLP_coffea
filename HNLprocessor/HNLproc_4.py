@@ -134,7 +134,9 @@ class MyProcessor(processor.ProcessorABC):
             'ctau':events.gLLP_ctau,
         })
         llp['csc_loose']= (abs(llp.eta)<2.4) & (llp.r<695.5) &( abs(llp.z)>400) &( abs(llp.z)<1100)
-        llp['dt_loose'] = ( abs(llp.z)<661) & (llp.r>200) & (llp.r<800) 
+        llp['dt_loose'] = (abs(llp.z)<661) & (llp.r>200) & (llp.r<800) 
+        llp['csc_tight']= (abs(llp.eta)<2.4) & (llp.r<695.5) &( abs(llp.z)>730) &( abs(llp.z)<1100)
+        llp['dt_tight'] = (abs(llp.z)<661) & (llp.r>460) & (llp.r<800) 
         self.llp = llp
         return llp 
 
@@ -286,9 +288,10 @@ class MyProcessor(processor.ProcessorABC):
         dt_cluster = ak.zip(
             {
                  "size":events.dtRechitClusterSize,
-                 "x":events.dtRechitClusterX,
-                 "y":events.dtRechitClusterY,
-                 "z":events.dtRechitClusterZ,
+                 "X":events.dtRechitClusterX,
+                 "Y":events.dtRechitClusterY,
+                 "Z":events.dtRechitClusterZ,
+                 "R":np.sqrt(events.dtRechitClusterX**2+events.dtRechitClusterY**2),
                  "llp_x":events.dtRechitCluster_match_gLLP_decay_x,
                  "llp_y":events.dtRechitCluster_match_gLLP_decay_y,
                  "llp_z":events.dtRechitCluster_match_gLLP_decay_z,
@@ -345,7 +348,6 @@ class MyProcessor(processor.ProcessorABC):
             behavior=vector.behavior
         )
 
-
         dr_dt_cluster_dz1 = ak.fill_none(dt_cluster.delta_r(deadzone_1),-999,axis=None)
 
         dt_cluster = ak.with_field(dt_cluster,dr_dt_cluster_dz1<0.4,"Deadzone_1")
@@ -353,6 +355,13 @@ class MyProcessor(processor.ProcessorABC):
         dr_dt_cluster_dz2 = ak.fill_none(dt_cluster.delta_r(deadzone_2),-999,axis=None)
 
         dt_cluster = ak.with_field(dt_cluster,dr_dt_cluster_dz2<0.4,"Deadzone_2")
+
+        dt_IsNoise = (events.dtRechitClusterMaxStation==2)&(events.dtRechitClusterWheel==1)\
+                            &(events.dtRechitClusterPhi<=0.7)&(events.dtRechitClusterPhi>=0.4)\
+                            &( ((events.runNum>=275750)&(events.runNum<=275950))|\
+                                ((events.runNum>=274150)&(events.runNum<=274200)) )  #2016C,2016B
+    
+        dt_cluster = ak.with_field(dt_cluster,dt_IsNoise==True,"IsNoise")
 
         return dt_cluster
  
@@ -370,6 +379,7 @@ class MyProcessor(processor.ProcessorABC):
         #dr_glbMu      = (dt_cluster.dr_glbMuPt2>0.8)
         #dr_allMu      = (dt_cluster.dr_allMuPt5>0.8)
         dt_deadzones = ~(dt_cluster.Deadzone_1) & ~(dt_cluster.Deadzone_2)
+        dt_noise      = (dt_cluster.IsNoise==False) 
         clusterMasks = ak.zip({
                 "dt_jetVeto"  :dt_jetVeto  ,
                 "dt_muonVeto" :dt_muonVeto ,
@@ -384,6 +394,7 @@ class MyProcessor(processor.ProcessorABC):
                 #"dr_glbMu"     :dr_glbMu     ,
                 #"dr_allMu"     :dr_allMu     ,
                 "dt_deadzones": dt_deadzones,
+                "dt_noise": dt_noise,
         })
         return clusterMasks
     
@@ -394,6 +405,8 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['Acceptance_dt']=ak.firsts(events.gLLP_dt)==1
         selectionMasks['Acceptance_csc_loose']=ak.firsts(self.llp.csc_loose)==1
         selectionMasks['Acceptance_dt_loose']=ak.firsts(self.llp.dt_loose)==1
+        selectionMasks['Acceptance_csc_tight']=ak.firsts(self.llp.csc_tight)==1
+        selectionMasks['Acceptance_dt_tight']=ak.firsts(self.llp.dt_tight)==1
         selectionMasks['METfilters']   =events.Flag2_all==True
         selectionMasks['trigger_ele']  =events.SingleEleTrigger==True
         selectionMasks['trigger_mu']   =events.SingleMuonTrigger==True
@@ -413,9 +426,9 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
         selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto',"RE12_veto"])
 
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones"]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
-        DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones"]
+        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_OOT" ]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
+        DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise"          ]
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         
@@ -518,6 +531,7 @@ class MyProcessor(processor.ProcessorABC):
         if self._debug:
             print(dataset)
             print("Weight statistics: %r" % weights.weightStatistics) 
+            print("Weight variations: " , weights.variations) 
 
         ## Fill no selection plots
         output['nLeptons'].fill(dataset=dataset, nLeptons = events.nLeptons, weight=weights.weight())
@@ -571,7 +585,38 @@ class MyProcessor(processor.ProcessorABC):
 
 
         output["metXYCorr"].fill(dataset=dataset,region="noselection",metXYCorr=events.metXYCorr,weight=weights.weight()) 
-            
+
+        for region in ["CleanLep","CleanLep_Tight"]:
+            if region=="CleanLep":
+                acc_csc = "Acceptance_csc"
+                acc_dt = "Acceptance_dt"
+            else:
+                acc_csc = "Acceptance_csc_tight"
+                acc_dt = "Acceptance_dt_tight"
+            if isSignal:
+                #preselection_mask =  buildMask(selectionMasks,preselections+["Acceptance_csc"])
+                preselection_mask =  buildMask(selectionMasks,preselections+[acc_csc])
+                cut = (preselection_mask) & (cluster.dr_cluster_lep>0.8)&(cluster.time < 12.5)&(cluster.time>-5)&(cluster.llp_match)
+            else:
+                preselection_mask =  buildMask(selectionMasks,preselections)
+                cut = (preselection_mask) & (cluster.dr_cluster_lep>0.8)&(cluster.time < 12.5)&(cluster.time>-5)
+    
+            w_cls      = (weights.weight() * ak.ones_like(cluster.size))[cut] ## use size to pick-up the cluster shape
+            output["ClusterJetVetoPt"].fill(dataset=dataset,region=region,ClusterJetVetoPt=ak.flatten(cluster[cut].JetVetoPt),weight=ak.flatten(w_cls))        
+            output["ClusterMuonVetoPt"].fill(dataset=dataset,region=region,ClusterMuonVetoPt=ak.flatten(cluster[cut].MuonVetoPt),weight=ak.flatten(w_cls))              
+            output["ClusterME11_12"].fill(dataset=dataset,region=region,ClusterME11_12=ak.flatten(cluster[cut].ME11_12),weight=ak.flatten(w_cls))        
+            if isSignal:
+                preselection_mask =  buildMask(selectionMasks,preselections+[acc_dt])
+                cut = (preselection_mask) & (dt_cluster.dr_cluster_lep>0.8)&(dt_cluster.rpcBx==0)&(dt_cluster.llp_match)
+            else:
+                preselection_mask =  buildMask(selectionMasks,preselections)
+                #cut = (preselection_mask) & (dt_cluster.dr_cluster_lep>0.8)&(dt_cluster.rpcBx==0)&(dt_cluster.MuonVetoLooseId)
+                cut = (preselection_mask) & (dt_cluster.dr_cluster_lep>0.8)&(dt_cluster.rpcBx==0)
+            w_cls      = (weights.weight() * ak.ones_like(dt_cluster.size))[cut] ## use size to pick-up the cluster shape
+            output["ClusterJetVetoPt_dt"].fill(dataset=dataset,region=region,ClusterJetVetoPt=ak.flatten(dt_cluster[cut].JetVetoPt),weight=ak.flatten(w_cls))        
+            output["ClusterMuonVetoPt_dt"].fill(dataset=dataset,region=region,ClusterMuonVetoPt=ak.flatten(dt_cluster[cut].MuonVetoPt),weight=ak.flatten(w_cls))       
+            output["ClusterMuonVetoPt_dt"].fill(dataset=dataset,region=region,ClusterMuonVetoPt=ak.flatten(dt_cluster[cut].MuonVetoPt),weight=ak.flatten(w_cls))       
+            output["ClusterMB1_dt"].fill(dataset=dataset,region=region,ClusterMB1=ak.flatten(dt_cluster[cut].nMB1),weight=ak.flatten(w_cls))        
 
  
         ## Fill regions plot
@@ -632,6 +677,18 @@ class MyProcessor(processor.ProcessorABC):
             else:
                 w_cls      = (weights.weight() * ak.ones_like(dt_cluster.size))[cut] ## use size to pick-up the cluster shape
 
+                if region=="ABCD_dt_OOT":
+                    if isData:
+                        output["Cluster_runNum_dt"].fill(dataset=dataset,region=region,ClusterSize=ak.flatten(dt_cluster[cut].size),
+                                                RunNumber = ak.flatten((ak.ones_like(dt_cluster.size)[cut])*(events.runNum)),
+                                                weight=ak.flatten(w_cls))
+                        output["Cluster_rz_dt"].fill(dataset=dataset,region=region,R=ak.flatten(dt_cluster[cut].R),
+                                                Z = ak.flatten(dt_cluster[cut].Z),
+                                                weight=ak.flatten(w_cls))
+                        output["Cluster_phi_dt"].fill(dataset=dataset,region=region,phi=ak.flatten(dt_cluster[cut].phi),
+                                                weight=ak.flatten(w_cls))
+
+
                 output["dphi_cluster_dt"].fill(dataset=dataset,region=region,
                                                 ClusterSize=ak.flatten(dt_cluster[cut].size),
                                                 dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_lep)),
@@ -660,7 +717,32 @@ class MyProcessor(processor.ProcessorABC):
                                            weight=ak.flatten(w_cls))        
                 output["ClusterMuonVetoPt_dt"].fill(dataset=dataset,region=region,
                                            ClusterMuonVetoPt=ak.flatten(dt_cluster[cut].MuonVetoPt),
-                                           weight=ak.flatten(w_cls))        
+                                           weight=ak.flatten(w_cls))       
+        if not isData:
+            ## CSC systematics
+            cut      = buildMask(selectionMasks,regions["ABCD"])
+            nhit     = ak.flatten(cluster[cut].size)
+            dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_lep))
+            
+            w_cls = ak.flatten((weights.weight() * ak.ones_like(cluster.size))[cut])
+            output['dphi_cluster_syst'].fill(dataset=dataset,syst="nominal",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            w_cls = ak.flatten((weights.weight("WptUp") * ak.ones_like(cluster.size))[cut])
+            output['dphi_cluster_syst'].fill(dataset=dataset,syst="WptUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            w_cls = ak.flatten((weights.weight("WptDown") * ak.ones_like(cluster.size))[cut])
+            output['dphi_cluster_syst'].fill(dataset=dataset,syst="WptDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            ## DT systematics
+            cut      = buildMask(selectionMasks,regions["ABCD_dt"])
+            nhit     = ak.flatten(dt_cluster[cut].size)
+            dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_lep))
+            
+            w_cls = ak.flatten((weights.weight() * ak.ones_like(dt_cluster.size))[cut])
+            output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="nominal",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            w_cls = ak.flatten((weights.weight("WptUp") * ak.ones_like(dt_cluster.size))[cut])
+            output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="WptUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            w_cls = ak.flatten((weights.weight("WptDown") * ak.ones_like(dt_cluster.size))[cut])
+            output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="WptDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+
+ 
         ## fill cutflow plots:
         output['cutflow'].fill(dataset=dataset,region="csc_cutflow",cutflow="NoSelection",weight=weights.weight())
         output['cutflow'].fill(dataset=dataset,region="dt_cutflow",cutflow="NoSelection",weight=weights.weight())

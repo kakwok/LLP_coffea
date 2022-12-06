@@ -75,7 +75,24 @@ def buildMask(allMasks,cutnames):
     return allcuts
 
 class MyProcessor(processor.ProcessorABC):
-    #def __init__(self,isElectronChannel=True,is2017=False,,saveSkim=False,debug=False):
+    """
+    Processor for HNL analysis with muon shower in the muon system. Make histograms from custom flat input tree.
+
+    Parameters 
+    ----------
+    isElectronChannel : bool (default is True)
+        If true, make electron channel selections; else make muon channel selections;
+    is2017 : bool (default is False)
+        If ture, make 2017 pT cut for muon channel. Only matters for signals in muon channel. 
+        Same is done for data is done by convention of dataset name.
+    runSys : bool (default is False)
+        Run systematic variations of signals
+    saveSkim : bool (default is False)
+        Output events passing selections with reduced set of info. Modify processor to configure selection.
+    debug   : bool (default is False)
+        Print debug information.
+    
+    """
     def __init__(self,isElectronChannel=True,**options):
         defaultOptions = { 'debug': False, 'saveSkim': False, 'runSys':False,"is2017":False}
         options = { **defaultOptions, **options }

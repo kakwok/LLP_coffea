@@ -4,16 +4,21 @@ import coffea
 import pickle,glob
 import time
 from coffea.nanoevents import NanoEventsFactory, BaseSchema
+from HNLprocessor.HNLproc_4 import MyProcessor
+from HNLprocessor.TTbar_proc import ttbarProcessor
 
-def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=False,saveSkim=False,debug=False):
-    #from HNLprocessor.HNLproc_3 import MyProcessor
-    from HNLprocessor.HNLproc_4 import MyProcessor
+#def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,is2017=False,runSys=False,full=False,saveSkim=False,debug=False,ttbar=False):
+def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,**options):
+    if options['ttbar']:
+        p = ttbarProcessor(isElectronChannel,**options)
+    else:
+        p = MyProcessor(isElectronChannel,**options)
 
-    if full:      
+    if options['full']:      
         out = processor.run_uproot_job(
             fileset,
             treename="MuonSystem",
-            processor_instance=MyProcessor(isElectronChannel,saveSkim,debug),
+            processor_instance=p,
             executor=processor.iterative_executor,
             executor_args={
                 "schema": BaseSchema,
@@ -24,12 +29,12 @@ def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=
         out = processor.run_uproot_job(
             fileset,
             treename="MuonSystem",
-            processor_instance=MyProcessor(isElectronChannel,saveSkim,debug),
+            processor_instance=p,
             executor=processor.iterative_executor,
             executor_args={
                 "schema": BaseSchema,
             },
-            maxchunks = 2,
+            maxchunks = 1,
             chunksize=100,
         )
 
@@ -38,13 +43,18 @@ def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,full=
         pickle.dump(out,f)
     return
 
-def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,nJobs=4,saveSkim=False):
+def runLPC(outf="test.pickle",fileset="test.json",**options):
     import time
     from distributed import Client
     from lpcjobqueue import LPCCondorCluster
     tic = time.time()
     #cluster = LPCCondorCluster(log_directory="/uscms/home/kkwok/log")
-    cluster = LPCCondorCluster()
+    #cluster = LPCCondorCluster()
+    #cluster = LPCCondorCluster(shared_temp_directory="/tmp")
+    #cluster = LPCCondorCluster(shared_temp_directory="/tmp", memory='4GB')
+    cluster = LPCCondorCluster(shared_temp_directory='/tmp',
+                                 worker_extra_args=['--worker-port 10000:10070', '--nanny-port 10070:10100', '--no-dashboard'],
+                                 job_script_prologue=[]) 
 
     # minimum > 0: https://github.com/CoffeaTeam/coffea/issues/465
     cluster.adapt(minimum=4, maximum=100)
@@ -59,19 +69,22 @@ def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,nJobs=4
 
     client.upload_file("HNLprocessor.zip")
 
+    if options['ttbar']:
+        #p = ttbarProcessor(isElectronChannel,is2017,runSys,saveSkim,debug)
+        p = ttbarProcessor(isElectronChannel,**options)
+    else:
+        p = MyProcessor(isElectronChannel,**options)
 
-    #from HNLprocessor.HNLproc_3 import MyProcessor
-    from HNLprocessor.HNLproc_4 import MyProcessor
 
     print("Waiting for at least one worker...")
     client.wait_for_workers(4)
     hists, metrics = processor.run_uproot_job(
         fileset,
         treename="MuonSystem",
-        processor_instance=MyProcessor(isElectronChannel,saveSkim),
+        processor_instance=p,
         executor=processor.dask_executor,
         executor_args=exe_args,
-        chunksize=10000,
+        #chunksize=10000,
     )
 
 
@@ -92,9 +105,12 @@ if __name__ == '__main__':
     parser.add_option('--local', dest='local', action='store_true',default = False, help='Run local test with 1 chunk of full fileset')
     parser.add_option('--condor', dest='condor', action='store_true',default = False, help='Run local test with 1 chunk of full fileset')
     parser.add_option('--muon', dest='muon', action='store_true',default = False, help='Run muon channel')
+    parser.add_option('--ttbar', dest='ttbar', action='store_true',default = False, help='Run ttbar proc')
+    parser.add_option('--is2017', dest='is2017', action='store_true',default = False, help='Use 2017 muon pT cut for signals')
     parser.add_option('--full', dest='full', action='store_true',default = False, help='Run full file chunks')
     parser.add_option('--saveSkim', dest='saveSkim', action='store_true',default = False, help='Save skim selections')
     parser.add_option('--debug', dest='debug', action='store_true',default = False, help='run with debug')
+    parser.add_option('--runSys', dest='runSys', action='store_true',default = False, help='run systematics variations')
     parser.add_option('--fileset', dest='fileset', default = "test.json", help='input file json')
     parser.add_option('--nJobs', dest='nJobs', default = 4, type=int, help='number of workers in condor')
     parser.add_option('-o', dest='outf', default='HNL_histograms.pickle', help='collection of histograms')
@@ -104,17 +120,22 @@ if __name__ == '__main__':
     saveSkim    = options.saveSkim
     fileset = options.fileset
     isElectronChannel = not options.muon
+    procOptions       = vars(options)
+    procOptions       = {k:v for k,v in procOptions.items() if k not in ["fileset","outf","isElectronChannel"]} ## write these 3 option explicitly
 
     print(" Fileset = ", fileset)
     print(" isElectronChannel = ", isElectronChannel)
+    print(" is2017            = ", options.is2017)
+    print(" runSys            = ", options.runSys)
     print(" outf              = ", outf)
     print(" saveSkim          = ", saveSkim)
+    print(" options           = ", procOptions)
 
     if options.test:
-        runLocal("test.pickle","test.json",isElectronChannel)
+        runLocal("test.pickle","test.json",isElectronChannel,procOptions)
     elif options.local:
         print("full               = ", options.full)
-        runLocal(outf,fileset,isElectronChannel,options.full,saveSkim,options.debug)
+        runLocal(outf,fileset,isElectronChannel,**procOptions)
     elif options.condor:
         print(" Using nJobs       = ", options.nJobs)
-        runLPC(outf,fileset,isElectronChannel,options.nJobs,saveSkim)
+        runLPC(outf,fileset,isElectronChannel,procOptions)

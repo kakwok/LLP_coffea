@@ -75,12 +75,17 @@ def buildMask(allMasks,cutnames):
     return allcuts
 
 class MyProcessor(processor.ProcessorABC):
-    def __init__(self,isElectronChannel=True,saveSkim=False,debug=False):
-        self._debug = debug
-        self._saveSkim = saveSkim
+    #def __init__(self,isElectronChannel=True,is2017=False,,saveSkim=False,debug=False):
+    def __init__(self,isElectronChannel=True,**options):
+        defaultOptions = { 'debug': False, 'saveSkim': False, 'runSys':False,"is2017":False}
+        options = { **defaultOptions, **options }
+        self._debug = options['debug']
+        self._saveSkim = options['saveSkim']
         self.isElectronChannel = isElectronChannel
         self.isMuonChannel = not(isElectronChannel)
         self.llp = None
+        self._is2017 = options['is2017']
+        self._runSys = options['runSys']
         ##define histograms 
         histograms['sumw']= processor.defaultdict_accumulator(float)
         self._accumulator = processor.dict_accumulator( histograms )
@@ -117,7 +122,10 @@ class MyProcessor(processor.ProcessorABC):
         ele   = lep[abs(lep.pdgid)==11]
         muons = lep[abs(lep.pdgid)==13]
         good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.4) & (ele.passId)]
-        good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)] 
+        if self._is2017:
+            good_mu  = muons[(muons.pt>28)&(abs(muons.eta)<2.4) & (muons.passId)]   ## use pT>28 GeV for 2017
+        else:
+            good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)] 
  
         if self.isElectronChannel:  good_lep = good_ele
         elif self.isMuonChannel: good_lep = good_mu
@@ -237,7 +245,7 @@ class MyProcessor(processor.ProcessorABC):
         ((cluster.NStation10==1) &(abs(cluster.AvgStation10)==2) & (abs(cluster.eta)<1.6))
         
         muonVeto = ~((muVeto.pt>20) & abs(muVeto.eta<2.4))
-        jetVeto  = ~((jetVeto.pt>10)& abs(jetVeto.eta<2.4))
+        jetVeto  = ~((jetVeto.pt>10)& abs(jetVeto.eta<3.0))
         RE12_veto     = (cluster.RE12==0)
         MB1seg_veto   = (cluster.MB1seg==0)
         RB1_veto      = (cluster.RB1==0)
@@ -299,6 +307,7 @@ class MyProcessor(processor.ProcessorABC):
                  "eta":events.dtRechitClusterEta,
                  "phi":events.dtRechitClusterPhi,
                  "JetVetoPt":events.dtRechitClusterJetVetoPt,
+                 "JetVetoEta":events.dtRechitClusterJetVetoEta,
                  "MuonVetoPt":events.dtRechitClusterMuonVetoPt,
                  "MuonVetoLooseId":events.dtRechitClusterMuonVetoLooseId,
                  "MuonVetoGlobal":events.dtRechitClusterMuonVetoGlobal,
@@ -366,8 +375,9 @@ class MyProcessor(processor.ProcessorABC):
         return dt_cluster
  
     def selectDTcluster(self,dt_cluster,events):
-        dt_jetVeto  = (dt_cluster.JetVetoPt<20.0)
+        dt_jetVeto  = ~((dt_cluster.JetVetoPt>20.0) & (abs(dt_cluster.JetVetoEta)<3.0))
         dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) & (dt_cluster.MuonVetoLooseId==True))
+        #dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) )
         dt_MB1veto  = (dt_cluster.nMB1<=1)
         dt_RPC      = (dt_cluster.nRPC>=1)
         dt_MB1adj   = (dt_cluster.nMB1_cosmic_minus<=8) & (dt_cluster.nMB1_cosmic_plus<=8)
@@ -415,13 +425,17 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['n_cls']        =ak.num(cluster,axis=1)>=1
         selectionMasks['n_cls_dt']     =ak.num(dt_cluster,axis=1)>=1
 
+        clusterMasks["neg_ME11_12_veto"] = ~clusterMasks['ME11_12_veto']  #make veto mask
         CSC_sel_ABCD = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto","RE12_veto","IntimeCut","timeSpreadCut","ClusterID"]
         CSC_sel_OOT  = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto","RE12_veto",
                         "OOT_timeCut","timeSpreadCut","ClusterID"]
+        CSC_sel_negME11 = ["neg_ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID"]
 
         selectionMasks['cls_ABCD']  = buildMask(clusterMasks,CSC_sel_ABCD)
         selectionMasks['cls_OOT']   = buildMask(clusterMasks,CSC_sel_OOT)
+        selectionMasks['cls_negME11']   = buildMask(clusterMasks,CSC_sel_negME11)
 
+        dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
         selectionMasks['cls_StatVeto']     =  buildMask(clusterMasks,['ME11_12_veto','MB1seg_veto','RB1_veto',"RE12_veto"])     
         selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
         selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto',"RE12_veto"])
@@ -429,10 +443,12 @@ class MyProcessor(processor.ProcessorABC):
         DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_OOT" ]
         DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
         DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise"          ]
+        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         
         selectionMasks['dt_JetMuStaVeto'] =  buildMask(dt_clusterMasks,DT_sel_vetos)
+        selectionMasks['dt_cls_negMB1'] = buildMask(dt_clusterMasks,DT_sel_negMB1)         
 
         return selectionMasks
 
@@ -460,6 +476,7 @@ class MyProcessor(processor.ProcessorABC):
             elif "_2018" in dataset: year = "2018" 
             else:
                 warnings.warn(" %s does not contain one of the strings: [_2016,_2017,_2018]. No golden json mask applied." % dataset, RuntimeWarning)
+            self._is2017 = True if year=="2017" else False
             if year is not None:           
                 events = events[lumiMasks[year](events.runNum,events.lumiSec)]
         output["sumw"][dataset] += len(events)
@@ -491,17 +508,19 @@ class MyProcessor(processor.ProcessorABC):
             preselections = ['trigger_mu','MET',"METfilters",'good_lepton']       
 
         CSC_sel_ABCD = ["dr_lep","ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto","RE12_veto","IntimeCut","timeSpreadCut","ClusterID"]
-        DT_sel_ABCD = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
+        DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","dt_noise"]
 
         regions = {
             "PreSel"       :preselections,            
             "JetMuVeto"    :preselections+["cls_JetMuVeto"],
             "JetMuStaVeto" :preselections+["cls_JetMuStaVeto"],
+            "ABCD_negME11"      :preselections+["cls_negME11"],
             "ABCD"         :preselections+["cls_ABCD"],            
             "ABCD_OOT"     :preselections+["cls_OOT"],
             "PreSel_dt"    :preselections,
             "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
             "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
+            "ABCD_dt_negMB1"       :preselections+["dt_cls_negMB1"],
             "JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
             ##"1cls"         :preselections+["n_cls"],            
             #"StatVeto"     :preselections+["cls_StatVeto"],
@@ -512,7 +531,7 @@ class MyProcessor(processor.ProcessorABC):
         #preselection mask
         p = buildMask(selectionMasks, preselections)
 
-        weights = Weights(len(events))
+        weights = Weights(len(events),storeIndividual=True)
         if not isData:
             corrections.add_pileup_weight(weights, events.npu,'2018')
             corrections.add_Wpt_kfactor(weights, events.gWPt, dataset)
@@ -677,7 +696,7 @@ class MyProcessor(processor.ProcessorABC):
             else:
                 w_cls      = (weights.weight() * ak.ones_like(dt_cluster.size))[cut] ## use size to pick-up the cluster shape
 
-                if region=="ABCD_dt_OOT":
+                if region=="ABCD_dt_OOT" or region=="ABCD_dt":
                     if isData:
                         output["Cluster_runNum_dt"].fill(dataset=dataset,region=region,ClusterSize=ak.flatten(dt_cluster[cut].size),
                                                 RunNumber = ak.flatten((ak.ones_like(dt_cluster.size)[cut])*(events.runNum)),
@@ -718,12 +737,14 @@ class MyProcessor(processor.ProcessorABC):
                 output["ClusterMuonVetoPt_dt"].fill(dataset=dataset,region=region,
                                            ClusterMuonVetoPt=ak.flatten(dt_cluster[cut].MuonVetoPt),
                                            weight=ak.flatten(w_cls))       
-        if not isData:
+        if not isData and self._runSys:
             ## CSC systematics
             cut      = buildMask(selectionMasks,regions["ABCD"])
             nhit     = ak.flatten(cluster[cut].size)
             dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_lep))
             
+            w_cls = ak.flatten((weights.partial_weight(exclude=["Wpt"]) * ak.ones_like(cluster.size))[cut])
+            output['dphi_cluster_syst'].fill(dataset=dataset,syst="noWpt",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
             w_cls = ak.flatten((weights.weight() * ak.ones_like(cluster.size))[cut])
             output['dphi_cluster_syst'].fill(dataset=dataset,syst="nominal",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
             w_cls = ak.flatten((weights.weight("WptUp") * ak.ones_like(cluster.size))[cut])
@@ -735,6 +756,8 @@ class MyProcessor(processor.ProcessorABC):
             nhit     = ak.flatten(dt_cluster[cut].size)
             dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_lep))
             
+            w_cls = ak.flatten((weights.partial_weight(exclude=["Wpt"]) * ak.ones_like(dt_cluster.size))[cut])
+            output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="noWpt",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
             w_cls = ak.flatten((weights.weight() * ak.ones_like(dt_cluster.size))[cut])
             output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="nominal",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
             w_cls = ak.flatten((weights.weight("WptUp") * ak.ones_like(dt_cluster.size))[cut])

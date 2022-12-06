@@ -751,6 +751,29 @@ class MyProcessor(processor.ProcessorABC):
             output['dphi_cluster_syst'].fill(dataset=dataset,syst="WptUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
             w_cls = ak.flatten((weights.weight("WptDown") * ak.ones_like(cluster.size))[cut])
             output['dphi_cluster_syst'].fill(dataset=dataset,syst="WptDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            
+            if self.isElectronChannel:
+                w_cls = ak.flatten((weights.weight("electron_SF_2018_value") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="electron_SF_2018_value",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("electron_SF_2018_value") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="electron_SF_2018_value",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+
+            else: 
+                w_cls = ak.flatten((weights.weight("muon_ID_2018_valueDown") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="muon_ID_2018_valueDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("muon_ID_2018_valueUp") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="muon_ID_2018_valueUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                
+                w_cls = ak.flatten((weights.weight("muon_ISO_2018_valueDown") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="muon_ISO_2018_valueDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("muon_ISO_2018_valueUp") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="muon_ISO_2018_valueUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            
+                w_cls = ak.flatten((weights.weight("muon_trigger_2018_valueDown") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="muon_trigger_2018_valueDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("muon_trigger_2018_valueUp") * ak.ones_like(cluster.size))[cut])
+                output['dphi_cluster_syst'].fill(dataset=dataset,syst="muon_trigger_2018_valueUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                
             ## DT systematics
             cut      = buildMask(selectionMasks,regions["ABCD_dt"])
             nhit     = ak.flatten(dt_cluster[cut].size)
@@ -764,7 +787,28 @@ class MyProcessor(processor.ProcessorABC):
             output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="WptUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
             w_cls = ak.flatten((weights.weight("WptDown") * ak.ones_like(dt_cluster.size))[cut])
             output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="WptDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+            if self.isElectronChannel:
+                w_cls = ak.flatten((weights.weight("electron_SF_2018_value") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="electron_SF_2018_value",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("electron_SF_2018_value") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="electron_SF_2018_value",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
 
+            else:
+                w_cls = ak.flatten((weights.weight("muon_ID_2018_valueDown") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="muon_ID_2018_valueDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("muon_ID_2018_valueUp") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="muon_ID_2018_valueUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+
+                w_cls = ak.flatten((weights.weight("muon_ISO_2018_valueDown") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="muon_ISO_2018_valueDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("muon_ISO_2018_valueUp") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="muon_ISO_2018_valueUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+
+                w_cls = ak.flatten((weights.weight("muon_trigger_2018_valueDown") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="muon_trigger_2018_valueDown",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+                w_cls = ak.flatten((weights.weight("muon_trigger_2018_valueUp") * ak.ones_like(dt_cluster.size))[cut])
+                output['dphi_cluster_dt_syst'].fill(dataset=dataset,syst="muon_trigger_2018_valueUp",ClusterSize=nhit,dphi_lep=dphi_lep, weight=w_cls)
+           
  
         ## fill cutflow plots:
         output['cutflow'].fill(dataset=dataset,region="csc_cutflow",cutflow="NoSelection",weight=weights.weight())

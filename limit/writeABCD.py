@@ -35,9 +35,8 @@ def writeBinProcSection(text_file,signal_rate,bkg_proc):
     text_file.write(procNameLine+"\n") 
     text_file.write(procNumLine+"\n") 
     text_file.write(rateNumLine+"\n") 
-    text_file.write('------------------------------ \n')
 
-def writeUncSection(text_file,signal_rate,bkg_proc,lnN_unc):
+def writeUncSection(text_file,signal_rate,bkg_proc,bkg_unc,sig_unc):
     ### unc = {"proc_uncX":[a,b,c,d]}
 
     ## match num. of proc
@@ -45,7 +44,8 @@ def writeUncSection(text_file,signal_rate,bkg_proc,lnN_unc):
     procs.update(signal_rate)
     procs.update(bkg_proc)
 
-    for unc_name,unc_arr in lnN_unc.items():
+    ## bkg uncertainties
+    for unc_name,unc_arr in bkg_unc.items():
         unc_text = unc_name+' \t lnN'
         if not np.any([k in unc_name for k in procs.keys()]): continue                  #skip unc that does not match any proc
         #match with all proc.
@@ -63,6 +63,26 @@ def writeUncSection(text_file,signal_rate,bkg_proc,lnN_unc):
                     else:
                         unc_text += '\t - '                      #not this proc
         text_file.write(unc_text + ' \n')                        # write the line
+    ## signal uncertainties
+    for unc_name,unc_dict in sig_unc.items():
+        unc_text = unc_name+' \t lnN'
+        for unc_proc,unc_arr in unc_dict.items():                                           ##  unc_dict = {"HNL":[0.016,0.016, 0.016 ,0.016]}
+            for i,Bin in enumerate(["chA","chB","chC","chD"]):
+                for j,(procName,rates) in enumerate(procs.items()):                          ## match proc name with unc_proc
+                    if procName == unc_proc: 
+                        i_rate = rates[i]                                                    #rate of proc j in bin i
+                        if i_rate>=0:                                                         
+                            if unc_arr[i] ==0:
+                                unc_text += '\t - '                                         #use - for 0 unc.
+                            elif type(unc_arr[i])==type("") and len(unc_arr[i].split("/"))>1:
+                                unc_text += ' \t '+unc_arr[i]                               #use string for asym unc
+                            else:
+                                unc_text += ' \t '+str(unc_arr[i]+1)                        #simple lnN
+                    else:
+                        unc_text += '\t - '                                             #skip bkg proc
+        text_file.write(unc_text + ' \n')                        # write the line
+    return
+
 
 
 def make_datacard_2sig(outDataCardsDir,modelName,  signal_rate, norm, bkg_rate, observation, bkg_unc,  sig_unc):
@@ -91,6 +111,9 @@ def make_datacard_2sig(outDataCardsDir,modelName,  signal_rate, norm, bkg_rate, 
     text_file.write('observation \t {0:6.2f} \t {1:6.2f} \t {2:6.2f} \t {3:6.2f} \n'.format(observation[0],observation[1],observation[2],observation[3]))
     text_file.write('------------------------------ \n')
     writeBinProcSection(text_file,signal_rate,bkg_rate)
+    text_file.write('------------------------------ \n')
+    #### uncertainties ####
+    writeUncSection(text_file,signal_rate,bkg_rate,bkg_unc,sig_unc)
     text_file.write('NA_val      extArg         {0}   [{0},{0}] \n'.format(a))
     text_file.write('NB_val      extArg         {0}   [{0},{0}] \n'.format(b))
     text_file.write('NC_val      extArg         {0}   [{0},{0}] \n'.format(c))
@@ -101,9 +124,7 @@ def make_datacard_2sig(outDataCardsDir,modelName,  signal_rate, norm, bkg_rate, 
     text_file.write('NB  rateParam       chB     bkg      (@0*(1+1/sqrt(@0))**@1)       NB_val,NB_x \n')
     text_file.write('NC  rateParam       chC     bkg      (@0*(1+1/sqrt(@0))**@1)       NC_val,NC_x \n')
     text_file.write('ND  rateParam       chD     bkg      (@0*@2/@1)                     NA,NB,NC ## D=A*C/B\n')
-    text_file.write('norm  rateParam       *     ggH      1 \n')
-    #### uncertainties ####
-    writeUncSection(text_file,signal_rate,bkg_rate,bkg_unc)
+    text_file.write('norm  rateParam       *     HNL      1 \n')
 
 
 def calABCD(listABCD,eff_nhit,eff_dphi):
@@ -399,11 +420,11 @@ def loadSignalFromJson(fin='../signals_Nov18_ele.json',muon=True,cut=None,debug=
             out = proc.postprocess(out)
             if debug:
                 toc = time.perf_counter()
-                print(f"     processing time =   {toc - tic:0.4f} seconds")
+                #print(f"     processing time =   {toc - tic:0.4f} seconds")
             del(events)
             data[dataset] = scaleHist(out,dataset,lumi,cut,debug) 
     stop = time.perf_counter()
-    if debug: print(f"     total processing time =   {stop - start:0.4f} seconds")
+    #if debug: print(f"     total processing time =   {stop - start:0.4f} seconds")
     return data
 
     
@@ -463,45 +484,74 @@ def loadhist(fin='../HNL_histograms_Feb23_muons_signal.pickle',muon=True,cut=Non
 
 def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False):
 
+    from collections import OrderedDict
     if not os.path.exists(outdir):
         print("mk dir = ", outdir)
         os.mkdir(outdir)
-    #outdir = "../combine/dt_datacards/"
-    #outdir = "./combine/HNL_datacards/"
     norm = 100.0    # 1% BR
     suffix = ""
 
-
     #ZmumuCR = CSC:73      DT:172  (200,130)
     #ZmumuCR = CSC:54      DT:130  (220,150)
-    
 
     bkg_proc_CSC= {
      #   "Zmumu_CSC":[-1,-1,-1,2.07], ## 2.5% TF 
         #"Zmumu_CSC":[-1,-1,-1,4.68], ## 5.6% TF 
-        "Zmumu_CSC":[-1,-1,-1,3.02], ## 5.6% TF, 220
+        "Zmumu_CSC":[-1,-1,-1,4.15], ## 5.69% TF, 200 cut
     }
     bkg_proc_DT= {
      #   "Zmumu_DT":[-1,-1,-1,1.95],    # 1.0% TF
         #"Zmumu_DT":[-1,-1,-1,2.56],     # 1.3% TF
-        "Zmumu_DT":[-1,-1,-1,1.69],     # 1.3% TF, 150
+        #"Zmumu_DT":[-1,-1,-1,1.69],     # 1.3% TF, 150
+        "Zmumu_DT":[-1,-1,-1,1.69],     # 1.7% TF, 130, loose ID
     }
-    # procName_uncName
+    # must use convention :     procName_uncName
     bkg_unc = {
-        "bkg_sys_D":[0  ,0 ,0 ,0.5],
+        #"bkg_sys_D":[0  ,0 ,0 ,0.5],
         #"Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.32],      
         #"Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.2 ],
-        "Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.25],    
-        "Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.23],
+        "Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.29], ## 5.69% TF, 200 cut 
+        "Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.24], # 1.7% TF, 130, loose ID
     }
-    sig_unc = {
-        "clus":{
-            "ggH":[0.15 ,0.15, 0.15 ,0.15],
-        },
-        "lumi":{
-            "ggH":[0.018 ,0.018, 0.018 ,0.018],
-        },
-    }
+    sig_unc_DT = OrderedDict({
+        "lumi"            :{       "HNL":[0.016,0.016, 0.016 ,0.016],    },
+        "pileup"          :{       "HNL":[0.01,0.01, 0.01 ,0.01],    },
+        "Wpt"             :{       "HNL":[0.10,0.10, 0.10 ,0.10],        },
+        "JES"             :{       "HNL":[0.02,0.02, 0.02 ,0.02],        },     ## TODO update
+        "dt_clusterSyst"  :{       "HNL":[0.15,0.15, 0.15 ,0.15],    },
+        "dt_rpcSyst"      :{       "HNL":[0.053,0.053, 0.053 ,0.053],    },
+        "dt_MB1Syst"      :{       "HNL":[0.074,0.074, 0.074 ,0.074],    },
+    })
+    sig_unc_CSC = OrderedDict({
+        "lumi"            :{       "HNL":[0.016,0.016, 0.016 ,0.016],    },
+        "pileup"          :{       "HNL":[0.01,0.01, 0.01 ,0.01],    },         ## TODO update
+        "Wpt"             :{       "HNL":[0.10,0.10, 0.10 ,0.10],        },     ## TODO update
+        "JES"             :{       "HNL":[0.02,0.02, 0.02 ,0.02],        },     ## TODO update
+        "csc_muonVeto"    :{       "HNL":[0.045 ,0.045, 0.045 ,0.045],        },
+        "csc_jetVeto"     :{       "HNL":[0.00068 ,0.00068 , 0.00068  ,0.00068 ],        },
+        "csc_rechitVeto"  :{       "HNL":[0.001 ,0.001 , 0.001  ,0.001 ],        },
+        "csc_cut_based_id":{       "HNL":[0.051 ,0.051 , 0.051  ,0.051 ],        },
+        "csc_time"        :{       "HNL":[0.009 ,0.009 , 0.009  ,0.009 ],        },
+        "csc_time_spread" :{       "HNL":[0.028 ,0.028 , 0.028  ,0.028 ],        },
+        "csc_clusterSyst" :{       "HNL":[0.035 ,0.035 , 0.035  ,0.035 ],        },
+        "csc_readout"     :{       "HNL":[0.01 ,0.01 , 0.01  ,0.01 ],        },
+    })
+    if options.muon:
+        mu_sys = { 
+            "muTrig": {"HNL":[0.01,0.01, 0.01 ,0.01]},
+            "muID"  : {"HNL":[0.003,0.003, 0.003 ,0.003]},
+            "muISO" : {"HNL":[0.006,0.006, 0.006 ,0.006]},
+        }
+        sig_unc_CSC.update( mu_sys)
+        sig_unc_DT.update( mu_sys)
+    else:
+        ele_sys = { 
+            "eleTrig": {"HNL":[0.01,0.01, 0.01 ,0.01]},
+            "eleReco" :{"HNL":[0.01,0.01, 0.01 ,0.01]},
+        }
+        sig_unc_CSC.update( ele_sys)
+        sig_unc_DT.update( ele_sys)
+
     with open(f_yield,'r') as f:
         data = json.load(f)
         bkg_rate_CSC = {}       # {bkg: [a,b,c,d]}
@@ -516,14 +566,14 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
                 name = name+suffix
             #norm = 1
             norm = signal["norm"]
-            sigRate = {"ggH":np.array(signal["CSC"])/norm }
+            sigRate = {"HNL":np.array(signal["CSC"])/norm }
             obs = bkg_rate_CSC['bkg']
             obs[-1] = bkg_rate_CSC['bkg'][0]*bkg_rate_CSC['bkg'][2]/bkg_rate_CSC['bkg'][1]  ## force D=A*C/B
-            make_datacard_2sig(outdir,name+"_CSC", sigRate, norm, bkg_rate_CSC, obs, bkg_unc,  sig_unc)
-            sigRate = {"ggH":np.array(signal["DT"]) /norm}
+            make_datacard_2sig(outdir,name+"_CSC", sigRate, norm, bkg_rate_CSC, obs, bkg_unc,  sig_unc_CSC)
+            sigRate = {"HNL":np.array(signal["DT"]) /norm}
             obs = bkg_rate_DT['bkg']
             obs[-1] = bkg_rate_DT['bkg'][0]*bkg_rate_DT['bkg'][2]/bkg_rate_DT['bkg'][1]  ## force D=A*C/B
-            make_datacard_2sig(outdir,name+"_DT", sigRate, norm, bkg_rate_DT, obs, bkg_unc,  sig_unc)
+            make_datacard_2sig(outdir,name+"_DT", sigRate, norm, bkg_rate_DT, obs, bkg_unc,  sig_unc_DT)
    
             def Run(cmd,test=False):
                 print(cmd)

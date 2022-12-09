@@ -67,10 +67,11 @@ def writeUncSection(text_file,signal_rate,bkg_proc,bkg_unc,sig_unc):
     for unc_name,unc_dict in sig_unc.items():
         unc_text = unc_name+' \t lnN'
         for unc_proc,unc_arr in unc_dict.items():                                           ##  unc_dict = {"HNL":[0.016,0.016, 0.016 ,0.016]}
+            #print(unc_proc,unc_arr)
             for i,Bin in enumerate(["chA","chB","chC","chD"]):
                 for j,(procName,rates) in enumerate(procs.items()):                          ## match proc name with unc_proc
+                    i_rate = rates[i]                                                    #rate of proc j in bin i
                     if procName == unc_proc: 
-                        i_rate = rates[i]                                                    #rate of proc j in bin i
                         if i_rate>=0:                                                         
                             if unc_arr[i] ==0:
                                 unc_text += '\t - '                                         #use - for 0 unc.
@@ -79,7 +80,8 @@ def writeUncSection(text_file,signal_rate,bkg_proc,bkg_unc,sig_unc):
                             else:
                                 unc_text += ' \t '+str(unc_arr[i]+1)                        #simple lnN
                     else:
-                        unc_text += '\t - '                                             #skip bkg proc
+                        if i_rate>0:                                                     #skip ABC channels other bkg Zmumu_CSC
+                            unc_text += '\t - '                                             #skip bkg proc
         text_file.write(unc_text + ' \n')                        # write the line
     return
 

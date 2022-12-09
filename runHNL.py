@@ -7,7 +7,6 @@ from coffea.nanoevents import NanoEventsFactory, BaseSchema
 from HNLprocessor.HNLproc_4 import MyProcessor
 from HNLprocessor.TTbar_proc import ttbarProcessor
 
-#def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,is2017=False,runSys=False,full=False,saveSkim=False,debug=False,ttbar=False):
 def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,**options):
     if options['ttbar']:
         p = ttbarProcessor(isElectronChannel,**options)
@@ -43,7 +42,7 @@ def runLocal(outf="test.pickle",fileset="test.json",isElectronChannel=True,**opt
         pickle.dump(out,f)
     return
 
-def runLPC(outf="test.pickle",fileset="test.json",**options):
+def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,**options):
     import time
     from distributed import Client
     from lpcjobqueue import LPCCondorCluster
@@ -132,10 +131,10 @@ if __name__ == '__main__':
     print(" options           = ", procOptions)
 
     if options.test:
-        runLocal("test.pickle","test.json",isElectronChannel,procOptions)
+        runLocal("test.pickle","test.json",isElectronChannel,**procOptions)
     elif options.local:
         print("full               = ", options.full)
         runLocal(outf,fileset,isElectronChannel,**procOptions)
     elif options.condor:
         print(" Using nJobs       = ", options.nJobs)
-        runLPC(outf,fileset,isElectronChannel,procOptions)
+        runLPC(outf,fileset,isElectronChannel,**procOptions)

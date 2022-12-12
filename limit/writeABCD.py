@@ -287,22 +287,28 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None):
 
     if muon:
         lumi = 120
+        #signals = loadSignalFromJson("./limitpoints_muon.json",True,cut,debug,lumi) ## this is too slow 
         #bkg     = loadbkg("../HNL_histograms_Feb23_muons_data.pickle",True,cut,debug)
         #signals = loadhist("../HNL_histograms_Feb23_muons_signal.pickle",True,cut,debug)
         #signals.update( loadhist("../HNL_histograms_Mar1_muons_signal.pickle",True,cut,debug))
         #bkg     = loadbkg("../HNL_histograms_Nov29_muons_all.pickle",True,cut,debug)
-        bkg      = loadbkg("../HNL_histograms_Dec6_muons_data.pickle",True,cut,debug)
-        signals  = loadhist("../HNL_histograms_Dec6_muons_signals.pickle",True,cut,debug,lumi,
-                            "../HNL_histograms_Dec6_muons_signals_2017.pickle" )
-        #signals = loadSignalFromJson("./limitpoints_muon.json",True,cut,debug,lumi) ## this is too slow 
+        #bkg      = loadbkg("../HNL_histograms_Dec6_muons_data.pickle",True,cut,debug)
+        #signals  = loadhist("../HNL_histograms_Dec6_muons_signals.pickle",True,cut,debug,lumi,
+        #                    "../HNL_histograms_Dec6_muons_signals_2017.pickle" )
+        bkg      = loadbkg("../HNL_histograms_Dec6_muons_noLooseID_data.pickle",True,cut,debug)
+        signals  = loadhist("../HNL_histograms_Dec6_muons_noLooseID_signals.pickle",True,cut,debug,lumi,
+                            "../HNL_histograms_Dec6_muons_noLooseID_signals_2017.pickle" )
+
     else:
         lumi = 122
+        #signals = loadSignalFromJson("./limitpoints_ele.json",False,cut,debug,lumi)
         #bkg     = loadbkg("../HNL_histograms_Feb3_electrons.pickle",False,cut,debug)
         #signals = loadhist("../HNL_histograms_Apr1_ele_signal.pickle",False,cut,debug)
         #bkg     = loadbkg("../HNL_histograms_Nov29_ele_all.pickle",False,cut,debug)
+        #bkg     = loadbkg("../HNL_histograms_Dec6_ele_data.pickle",False,cut,debug)
+        #signals = loadhist("../HNL_histograms_Dec6_ele_signals.pickle",False,cut,debug,lumi)
         bkg     = loadbkg("../HNL_histograms_Dec6_ele_data.pickle",False,cut,debug)
         signals = loadhist("../HNL_histograms_Dec6_ele_signals.pickle",False,cut,debug,lumi)
-        #signals = loadSignalFromJson("./limitpoints_ele.json",False,cut,debug,lumi)
 
     #data = {**bkg,**signals} 
     data = {}
@@ -496,25 +502,31 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
     #ZmumuCR = CSC:73      DT:172  (200,130)
     #ZmumuCR = CSC:54      DT:130  (220,150)
 
-    bkg_proc_CSC= {
-     #   "Zmumu_CSC":[-1,-1,-1,2.07], ## 2.5% TF 
-        #"Zmumu_CSC":[-1,-1,-1,4.68], ## 5.6% TF 
-        "Zmumu_CSC":[-1,-1,-1,4.15], ## 5.69% TF, 200 cut
-    }
-    bkg_proc_DT= {
-     #   "Zmumu_DT":[-1,-1,-1,1.95],    # 1.0% TF
-        #"Zmumu_DT":[-1,-1,-1,2.56],     # 1.3% TF
-        #"Zmumu_DT":[-1,-1,-1,1.69],     # 1.3% TF, 150
-        "Zmumu_DT":[-1,-1,-1,1.69],     # 1.7% TF, 130, loose ID
-    }
-    # must use convention :     procName_uncName
-    bkg_unc = {
-        #"bkg_sys_D":[0  ,0 ,0 ,0.5],
-        #"Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.32],      
-        #"Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.2 ],
-        "Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.29], ## 5.69% TF, 200 cut 
-        "Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.24], # 1.7% TF, 130, loose ID
-    }
+    if options.muon:
+        bkg_proc_CSC= {
+         #   "Zmumu_CSC":[-1,-1,-1,2.07], ## 2.5% TF 
+            #"Zmumu_CSC":[-1,-1,-1,4.68], ## 5.6% TF 
+            "Zmumu_CSC":[-1,-1,-1,4.15], ## 5.69% TF, 200 cut
+        }
+        bkg_proc_DT= {
+         #   "Zmumu_DT":[-1,-1,-1,1.95],    # 1.0% TF
+            #"Zmumu_DT":[-1,-1,-1,2.56],     # 1.3% TF
+            #"Zmumu_DT":[-1,-1,-1,1.69],     # 1.3% TF, 150
+            "Zmumu_DT":[-1,-1,-1,1.69],     # 1.7% TF, 130, loose ID
+        }
+        # must use convention :     procName_uncName
+        bkg_unc = {
+            #"bkg_sys_D":[0  ,0 ,0 ,0.5],
+            #"Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.32],      
+            #"Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.2 ],
+            "Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.29], ## 5.69% TF, 200 cut 
+            "Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.24], # 1.7% TF, 130, loose ID
+        }
+    else:
+        bkg_proc_CSC= {}
+        bkg_proc_DT= {}
+        bkg_unc = {}
+
     sig_unc_DT = OrderedDict({
         "lumi"            :{       "HNL":[0.016,0.016, 0.016 ,0.016],    },
         "pileup"          :{       "HNL":[0.01,0.01, 0.01 ,0.01],    },
@@ -764,7 +776,9 @@ if __name__ == "__main__":
         #cut = {"CSC":(220,dphi_lepcuts[-2],None), "DT":(150,dphi_lepcuts[-2],None)}
         #########################################
         print("Working on muon Channel: ")
-        outdir = "./combine/HNL_datacards/muon_v11/"   ### v11 , full run 2, loosID, new timing 
+        #outdir = "./combine/HNL_datacards/muon_v11/"   ### v11 , full run 2, looseID, new timing 
+        #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
+        outdir = "./combine/HNL_datacards/muon_v12/"   ### v12 , full run 2,no loosID, new timing 
         cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
         isMuon=True
 

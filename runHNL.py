@@ -110,6 +110,7 @@ if __name__ == '__main__':
     parser.add_option('--saveSkim', dest='saveSkim', action='store_true',default = False, help='Save skim selections')
     parser.add_option('--debug', dest='debug', action='store_true',default = False, help='run with debug')
     parser.add_option('--runSys', dest='runSys', action='store_true',default = False, help='run systematics variations')
+    parser.add_option('--forLimit', dest='forLimit', action='store_true',default = False, help='run only the histograms for limit')
     parser.add_option('--fileset', dest='fileset', default = "test.json", help='input file json')
     parser.add_option('--nJobs', dest='nJobs', default = 4, type=int, help='number of workers in condor')
     parser.add_option('-o', dest='outf', default='HNL_histograms.pickle', help='collection of histograms')

@@ -87,6 +87,8 @@ class MyProcessor(processor.ProcessorABC):
         Same is done for data is done by convention of dataset name.
     runSys : bool (default is False)
         Run systematic variations of signals
+    forLimit : bool (default is False)
+        Produce only the histograms that are used for limit setting
     saveSkim : bool (default is False)
         Output events passing selections with reduced set of info. Modify processor to configure selection.
     debug   : bool (default is False)
@@ -103,6 +105,7 @@ class MyProcessor(processor.ProcessorABC):
         self.llp = None
         self._is2017 = options['is2017']
         self._runSys = options['runSys']
+        self._forLimit = options['forLimit']
         ##define histograms 
         histograms['sumw']= processor.defaultdict_accumulator(float)
         self._accumulator = processor.dict_accumulator( histograms )
@@ -393,8 +396,8 @@ class MyProcessor(processor.ProcessorABC):
  
     def selectDTcluster(self,dt_cluster,events):
         dt_jetVeto  = ~((dt_cluster.JetVetoPt>20.0) & (abs(dt_cluster.JetVetoEta)<3.0))
-        dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) & (dt_cluster.MuonVetoLooseId==True))
-        #dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) )
+        #dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) & (dt_cluster.MuonVetoLooseId==True))
+        dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) )
         dt_MB1veto  = (dt_cluster.nMB1<=1)
         dt_RPC      = (dt_cluster.nRPC>=1)
         dt_MB1adj   = (dt_cluster.nMB1_cosmic_minus<=8) & (dt_cluster.nMB1_cosmic_plus<=8)
@@ -569,6 +572,27 @@ class MyProcessor(processor.ProcessorABC):
             print("Weight statistics: %r" % weights.weightStatistics) 
             print("Weight variations: " , weights.variations) 
 
+        if self._forLimit:
+            cutnames = regions["ABCD"]
+            cut = buildMask(selectionMasks,cutnames)
+            region = "ABCD"
+            w_cls      = (weights.weight() * ak.ones_like(cluster.size))[cut] ## use size to pick-up the cluster shape
+            output["dphi_cluster_csc"].fill(dataset=dataset,region=region,
+                                            ClusterSize=ak.flatten(cluster[cut].size),
+                                            dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_lep)),
+                                            dphi_MET=np.abs(ak.flatten(cluster[cut].dphi_cluster_MET)),
+                                            weight=ak.flatten(w_cls))
+            cutnames = regions["ABCD_dt"]
+            cut = buildMask(selectionMasks,cutnames)
+            region = "ABCD_dt"
+            w_cls      = (weights.weight() * ak.ones_like(dt_cluster.size))[cut] ## use size to pick-up the cluster shape
+            output["dphi_cluster_dt"].fill(dataset=dataset,region=region,
+                                            ClusterSize=ak.flatten(dt_cluster[cut].size),
+                                            dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_lep)),
+                                            dphi_MET=np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_MET)),
+                                            weight=ak.flatten(w_cls))
+            return output
+            
         ## Fill no selection plots
         output['nLeptons'].fill(dataset=dataset, nLeptons = events.nLeptons, weight=weights.weight())
         

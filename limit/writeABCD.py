@@ -274,8 +274,19 @@ def scale2017(h1,h2):
     h2.scale(37.9)
     h1.add(h2)      ## this is done in-place
     return 
+def scale_ele(h1,h2,h3):
+    ##2018 = 51.6
+    h1.scale(51.6)
+    ##2017 = 39.4 ## ele 
+    h2.scale(39.4)
+    ##2016 = 30.9 ## ele
+    h3.scale(30.9)
+    h1.add(h2)      ## this is done in-place
+    h1.add(h3)      ## this is done in-place
+    return 
 
-def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None):
+
+def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, tauSignals=False):
     from coffea import hist
     if cut==None:
         ## nHit, dphi_lep, dphi_MET
@@ -295,10 +306,16 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None):
         #bkg      = loadbkg("../HNL_histograms_Dec6_muons_data.pickle",True,cut,debug)
         #signals  = loadhist("../HNL_histograms_Dec6_muons_signals.pickle",True,cut,debug,lumi,
         #                    "../HNL_histograms_Dec6_muons_signals_2017.pickle" )
-        bkg      = loadbkg("../HNL_histograms_Dec6_muons_noLooseID_data.pickle",True,cut,debug)
-        signals  = loadhist("../HNL_histograms_Dec6_muons_noLooseID_signals.pickle",True,cut,debug,lumi,
-                            "../HNL_histograms_Dec6_muons_noLooseID_signals_2017.pickle" )
-
+        #bkg      = loadbkg("../HNL_histograms_Dec6_muons_noLooseID_data.pickle",True,cut,debug)
+        #signals  = loadhist("../HNL_histograms_Dec6_muons_noLooseID_signals.pickle",True,cut,debug,lumi,
+        #                    "../HNL_histograms_Dec6_muons_noLooseID_signals_2017.pickle" )
+        bkg      = loadbkg("../HNL_histograms_Dec14_muons_data.pickle",True,cut,debug)
+        if tauSignals:
+            signals  = loadhist("../HNL_histograms_Dec14_tau_signals_mu_2018.pickle",True,cut,debug,lumi,
+                                "../HNL_histograms_Dec14_tau_signals_mu_2017.pickle" )
+        else:
+            signals  = loadhist("../HNL_histograms_Dec14_muons_signals.pickle",True,cut,debug,lumi,
+                                "../HNL_histograms_Dec14_muons_signals_2017.pickle" )
     else:
         lumi = 122
         #signals = loadSignalFromJson("./limitpoints_ele.json",False,cut,debug,lumi)
@@ -307,8 +324,17 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None):
         #bkg     = loadbkg("../HNL_histograms_Nov29_ele_all.pickle",False,cut,debug)
         #bkg     = loadbkg("../HNL_histograms_Dec6_ele_data.pickle",False,cut,debug)
         #signals = loadhist("../HNL_histograms_Dec6_ele_signals.pickle",False,cut,debug,lumi)
-        bkg     = loadbkg("../HNL_histograms_Dec6_ele_data.pickle",False,cut,debug)
-        signals = loadhist("../HNL_histograms_Dec6_ele_signals.pickle",False,cut,debug,lumi)
+        #bkg     = loadbkg("../HNL_histograms_Dec6_ele_noLooseID_data.pickle",False,cut,debug)
+        #signals = loadhist("../HNL_histograms_Dec6_ele_noLooseID_signals.pickle",False,cut,debug,lumi)
+        bkg     = loadbkg("../HNL_histograms_Dec14_ele_data.pickle",False,cut,debug)
+        if tauSignals:
+            signals = loadhist("../HNL_histograms_Dec14_tau_signals_ele_2018.pickle",False,cut,debug,lumi,
+                                "../HNL_histograms_Dec14_tau_signals_ele_2017.pickle",
+                                "../HNL_histograms_Dec14_ele_signals_2016.pickle")
+        else:
+            signals = loadhist("../HNL_histograms_Dec14_ele_signals_2018.pickle",False,cut,debug,lumi,
+                                "../HNL_histograms_Dec14_ele_signals_2017.pickle",
+                                "../HNL_histograms_Dec14_ele_signals_2016.pickle")
 
     #data = {**bkg,**signals} 
     data = {}
@@ -436,14 +462,23 @@ def loadSignalFromJson(fin='../signals_Nov18_ele.json',muon=True,cut=None,debug=
     return data
 
     
-def loadhist(fin='../HNL_histograms_Feb23_muons_signal.pickle',muon=True,cut=None,debug=True,lumi=137,fin2017=None):
+def loadhist(fin='../HNL_histograms_Feb23_muons_signal.pickle',muon=True,cut=None,debug=True,lumi=137,fin2017=None,fin2016=None):
     from coffea import hist
     
     with open(fin,'rb')  as f:
         out = pickle.load(f)
-   
     
-    if fin2017 is not None:
+    if fin2017 is not None and fin2016 is not None:
+        with open(fin2017,'rb')  as f:
+            out_2016 = pickle.load(f)
+        with open(fin2017,'rb')  as f:
+            out_2017 = pickle.load(f)
+        for k,h in out.items():
+            if (type(h)!=hist.Hist): continue
+            h_2017 = out_2017[k]    # find the same histogram in 2017 output
+            h_2016 = out_2016[k]    # find the same histogram in 2016 output
+            scale_ele(h,h_2017,h_2016)
+    elif fin2017 is not None:
         with open(fin2017,'rb')  as f:
             out_2017 = pickle.load(f)
         for k,h in out.items():
@@ -512,7 +547,8 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
          #   "Zmumu_DT":[-1,-1,-1,1.95],    # 1.0% TF
             #"Zmumu_DT":[-1,-1,-1,2.56],     # 1.3% TF
             #"Zmumu_DT":[-1,-1,-1,1.69],     # 1.3% TF, 150
-            "Zmumu_DT":[-1,-1,-1,1.69],     # 1.7% TF, 130, loose ID
+            #"Zmumu_DT":[-1,-1,-1,5.69],     # 1.7% TF, 130, loose ID
+            "Zmumu_DT":[-1,-1,-1,2.45],     # 1.47% TF, 130, no loose ID
         }
         # must use convention :     procName_uncName
         bkg_unc = {
@@ -520,7 +556,8 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             #"Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.32],      
             #"Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.2 ],
             "Zmumu_CSC_sys_D":[0 ,0 ,0 ,0.29], ## 5.69% TF, 200 cut 
-            "Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.24], # 1.7% TF, 130, loose ID
+            #"Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.24], # 1.7% TF, 130, loose ID
+            "Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.3], # 1.47% TF, 130, no loose ID
         }
     else:
         bkg_proc_CSC= {}
@@ -609,21 +646,25 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
                
 import sys
 sys.path.insert(0,"../")
-#from HNLprocessor.util import f_1m   ## Move to util if possible
-def f_1m(x):
-    x0 = np.array([1,2,4,5,7,10])
-    y0 = np.array([13.57,0.4238,0.01289,0.004156,0.0007452,0.000121])    
-    return np.exp(np.poly1d(np.polyfit(x0,np.log(y0),5))(x))
-
-def f_xsec(m):
-    def xsec_m(x):
-        return f_1m(m)/(x/1000.)
-    return xsec_m 
+#def f_1m(x):
+#    x0 = np.array([1,2,4,5,7,10])
+#    #y0 = np.array([13.57,0.4238,0.01289,0.004156,0.0007452,0.000121])   ## old xsec 
+#    y0 = np.array([8.492,0.2653,0.00809,2.612E-03,4.721E-04,7.751E-05])    
+#    return np.exp(np.poly1d(np.polyfit(x0,np.log(y0),5))(x))
+#
+#def f_xsec(m):
+#    def xsec_m(x):
+#        return f_1m(m)/(x/1000.)
+#    return xsec_m 
 
 # Find the corresponding yield of (m,ct)-> (m,xx)
-def shift_ctau(N_yield,m_old,ct_old,m_new):
+def shift_ctau(N_yield,m_old,ct_old,m_new,forTauHNL=False):
+    from HNLprocessor.util import f_1m,f_xsec, f_1m_tau,f_xsec_tau 
     ct_new = (m_new/m_old) * ct_old
-    return N_yield * f_xsec(m_new)(ct_new)/f_xsec(m_old)(ct_old)
+    if forTauHNL:
+        return N_yield * f_xsec_tau(m_new)(ct_new)/f_xsec_tau(m_old)(ct_old)
+    else:
+        return N_yield * f_xsec(m_new)(ct_new)/f_xsec(m_old)(ct_old)
 
 # shift yielsd in f_yield.json according to shifts[{"m_src":int,"m_target":int}]
 def shiftYields(f_yield,shifts):
@@ -643,10 +684,10 @@ def shiftYields(f_yield,shifts):
             for shift in shifts:
                 if m==shift["m_src"]:     
                     ct_new = (shift['m_target']/m) * ct            
-                    shift["CSC_target"].append(shift_ctau(np.array(signal['CSC']),m,ct,shift['m_target']))            
-                    shift["DT_target"].append(shift_ctau(np.array(signal['DT']),m,ct,shift['m_target']))                        
-                    shift["CSC_unc_target"].append(shift_ctau(np.array(signal['CSC_unc']),m,ct,shift['m_target']))            
-                    shift["DT_unc_target"].append(shift_ctau(np.array(signal['DT_unc']),m,ct,shift['m_target']))                        
+                    shift["CSC_target"].append(shift_ctau(np.array(signal['CSC']),m,ct,shift['m_target'],shift['isTau']))   
+                    shift["DT_target"].append(shift_ctau(np.array(signal['DT']),m,ct,shift['m_target'],shift['isTau']))                        
+                    shift["CSC_unc_target"].append(shift_ctau(np.array(signal['CSC_unc']),m,ct,shift['m_target'],shift['isTau']))            
+                    shift["DT_unc_target"].append(shift_ctau(np.array(signal['DT_unc']),m,ct,shift['m_target'],shift['isTau']))                        
                     m_src = str(shift["m_src"]).replace(".","p")
                     m_tar = str(shift["m_target"]).replace(".","p") 
                     ct_src = name.split("_")[-1]
@@ -679,6 +720,7 @@ if __name__ == "__main__":
     parser.add_option('--loadbkg', dest='loadbkg', action='store_true',default = False, help='Load bkg from pickle')
     parser.add_option('--writeYields', dest='writeYields', action='store_true',default = False, help='write yield fields')
     parser.add_option('--muon', dest='muon', action='store_true',default = False, help='make muon datacard')
+    parser.add_option('--tauSignals', dest='tauSignals', action='store_true',default = False, help='make tau signals datacard')
     (options, args) = parser.parse_args()
 
     dphi_lepcuts = np.linspace(0,np.pi,31)[1:-2]
@@ -735,19 +777,37 @@ if __name__ == "__main__":
         #cut = {"CSC":(200,dphi_lepcuts[-2],None), "DT":(130,dphi_lepcuts[-2],None)}
         #########################################
         print("Working on electron Channel: ")
-        outdir = "./combine/HNL_datacards/ele_v8/"   ###  v8, full run 2, looseID, new timing, 1 muon pT cut
+        #outdir = "./combine/HNL_datacards/ele_v8/"   ###  v8, full run 2, looseID, new timing,
+        #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
+        #outdir = "./combine/HNL_datacards/ele_v9/"   ###  v9, full run 2,no looseID, new timing
+        #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
+        #outdir = "./combine/HNL_datacards/ele_v10/"   ###  v10, new xSec, new ele pT cuts, trig. bits, trig SF
+        #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
+        outdir = "./combine/HNL_datacards/tau_v1/ele/"   ### v1 
         cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
         isMuon=False
 
         f_yield = outdir+"yields.json"
-        shifts = [
-            {"m_src":4.0,"m_target":3.0},
-            {"m_src":4.0,"m_target":3.1},
-            {"m_src":4.0,"m_target":3.2},
-            {"m_src":4.0,"m_target":3.5},
-        ]
+        if options.tauSignals:
+            # shifts for tau HNLs
+            shifts = [
+                {"m_src":2.0,"m_target":2.5,"isTau":True},
+                {"m_src":2.0,"m_target":2.2,"isTau":True},
+                {"m_src":2.0,"m_target":1.8,"isTau":True},
+                {"m_src":2.0,"m_target":1.5,"isTau":True},
+                {"m_src":1.0,"m_target":1.3,"isTau":True},
+            ]
+        else:
+            shifts = [
+                {"m_src":4.0,"m_target":3.0,"isTau":False},
+                {"m_src":4.0,"m_target":3.1,"isTau":False},
+                {"m_src":4.0,"m_target":3.2,"isTau":False},
+                {"m_src":4.0,"m_target":3.5,"isTau":False},
+            ]                                       
+
+
         if not options.muon:
-            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts) 
+            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals) 
             else:   makeAllcards(f_yield,outdir,"",options.dryRun)
         #########################################
         #########################################
@@ -776,13 +836,20 @@ if __name__ == "__main__":
         #cut = {"CSC":(220,dphi_lepcuts[-2],None), "DT":(150,dphi_lepcuts[-2],None)}
         #########################################
         print("Working on muon Channel: ")
-        #outdir = "./combine/HNL_datacards/muon_v11/"   ### v11 , full run 2, looseID, new timing 
+        #outdir = "./combine/HNL_datacards/muon_v11/"   ### v11 , full run 2, looseeID, new timing 
         #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
-        outdir = "./combine/HNL_datacards/muon_v12/"   ### v12 , full run 2,no loosID, new timing 
+        #outdir = "./combine/HNL_datacards/muon_v12/"   ### v12 , full run 2,no looseID, new timing 
+        #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
+        #outdir = "./combine/HNL_datacards/muon_v13/"   ### v13 , full run 2,no looseID, new timing, no mu pT cut for signal
+        #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
+        #outdir = "./combine/HNL_datacards/muon_v14/"   ### v14 , new xSec, new trig. bits 
+        #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
+        #########################################
+        outdir = "./combine/HNL_datacards/tau_v1/mu/"   ### v1 
         cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
         isMuon=True
 
         f_yield = outdir+"yields.json"
         if options.muon:
-            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts) 
+            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals) 
             else:            makeAllcards(f_yield,outdir,"",options.dryRun)

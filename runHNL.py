@@ -51,7 +51,7 @@ def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,**optio
     #cluster = LPCCondorCluster()
     #cluster = LPCCondorCluster(shared_temp_directory="/tmp")
     #cluster = LPCCondorCluster(shared_temp_directory="/tmp", memory='4GB')
-    cluster = LPCCondorCluster(shared_temp_directory='/tmp',
+    cluster = LPCCondorCluster(shared_temp_directory='/tmp', 
                                  worker_extra_args=['--worker-port 10000:10070', '--nanny-port 10070:10100', '--no-dashboard'],
                                  job_script_prologue=[]) 
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     parser.add_option('--condor', dest='condor', action='store_true',default = False, help='Run local test with 1 chunk of full fileset')
     parser.add_option('--muon', dest='muon', action='store_true',default = False, help='Run muon channel')
     parser.add_option('--ttbar', dest='ttbar', action='store_true',default = False, help='Run ttbar proc')
-    parser.add_option('--is2017', dest='is2017', action='store_true',default = False, help='Use 2017 muon pT cut for signals')
+    parser.add_option('--year', dest='year', default = "2018", help='Switch for year dependent pT cut/HLT decision')
     parser.add_option('--full', dest='full', action='store_true',default = False, help='Run full file chunks')
     parser.add_option('--saveSkim', dest='saveSkim', action='store_true',default = False, help='Save skim selections')
     parser.add_option('--debug', dest='debug', action='store_true',default = False, help='run with debug')
@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
     print(" Fileset = ", fileset)
     print(" isElectronChannel = ", isElectronChannel)
-    print(" is2017            = ", options.is2017)
+    print(" year              = ", options.year)
     print(" runSys            = ", options.runSys)
     print(" outf              = ", outf)
     print(" saveSkim          = ", saveSkim)

@@ -121,9 +121,20 @@ corrections['muonsf_evaluator'] = lepsf_evaluator
 corrections['muonsf_keys'] = lepsf_keys
 
 basedir="metadata/electron/egammaEffi.root"
+ele_sf="metadata/electron/ele_trigSF.root"
 ext = extractor()
 ext.add_weight_sets([f'electron_SF_2018_value EGamma_SF2D {basedir}'])
 ext.add_weight_sets([f'electron_SF_2018_error EGamma_SF2D_error {basedir}'])
+
+ext.add_weight_sets([f'electron_trigger_SF_2018_value h_ele32_wptTight_2018 {ele_sf}'])
+ext.add_weight_sets([f'electron_trigger_SF_2018_error h_ele32_wptTight_2018_err {ele_sf}'])
+
+ext.add_weight_sets([f'electron_trigger_SF_2017_value h_ele32_wptTight_2017 {ele_sf}'])
+ext.add_weight_sets([f'electron_trigger_SF_2017_error h_ele32_wptTight_2017_err {ele_sf}'])
+
+ext.add_weight_sets([f'electron_trigger_SF_2016_value h_ele27_wptTight_2016 {ele_sf}'])
+ext.add_weight_sets([f'electron_trigger_SF_2016_error h_ele27_wptTight_2016_err {ele_sf}'])
+
 ext.finalize()
 lepsf_evaluator = ext.make_evaluator()
 lepsf_keys = lepsf_evaluator.keys()

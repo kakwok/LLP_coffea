@@ -286,7 +286,7 @@ def scale_ele(h1,h2,h3):
     return 
 
 
-def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, tauSignals=False):
+def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, tauSignals=False,unblind=False,useOOT=True):
     from coffea import hist
     if cut==None:
         ## nHit, dphi_lep, dphi_MET
@@ -309,7 +309,7 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, 
         #bkg      = loadbkg("../HNL_histograms_Dec6_muons_noLooseID_data.pickle",True,cut,debug)
         #signals  = loadhist("../HNL_histograms_Dec6_muons_noLooseID_signals.pickle",True,cut,debug,lumi,
         #                    "../HNL_histograms_Dec6_muons_noLooseID_signals_2017.pickle" )
-        bkg      = loadbkg("../HNL_histograms_Dec14_muons_data.pickle",True,cut,debug)
+        bkg      = loadbkg("../HNL_histograms_Dec14_muons_data.pickle",True,cut,debug,useOOT)
         if tauSignals:
             signals  = loadhist("../HNL_histograms_Dec14_tau_signals_mu_2018.pickle",True,cut,debug,lumi,
                                 "../HNL_histograms_Dec14_tau_signals_mu_2017.pickle" )
@@ -326,7 +326,7 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, 
         #signals = loadhist("../HNL_histograms_Dec6_ele_signals.pickle",False,cut,debug,lumi)
         #bkg     = loadbkg("../HNL_histograms_Dec6_ele_noLooseID_data.pickle",False,cut,debug)
         #signals = loadhist("../HNL_histograms_Dec6_ele_noLooseID_signals.pickle",False,cut,debug,lumi)
-        bkg     = loadbkg("../HNL_histograms_Dec14_ele_data.pickle",False,cut,debug)
+        bkg     = loadbkg("../HNL_histograms_Dec14_ele_data.pickle",False,cut,debug,useOOT)
         if tauSignals:
             signals = loadhist("../HNL_histograms_Dec14_tau_signals_ele_2018.pickle",False,cut,debug,lumi,
                                 "../HNL_histograms_Dec14_tau_signals_ele_2017.pickle",
@@ -338,7 +338,14 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, 
 
     #data = {**bkg,**signals} 
     data = {}
-    for k,v in bkg.items(): data[k] = v 
+    for k,v in bkg.items():
+        if not unblind:
+            v['CSC'][-1] =-1
+            v['DT'][-1]  =-1
+            v['CSC_unc'][-1] =-1
+            v['DT_unc'][-1]  =-1
+        data[k] = v 
+            
     for k,v in signals.items(): data[k] = v 
     for k,v in data.items():
        v['DT'] = v['DT'].tolist()
@@ -351,7 +358,7 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, 
         shiftYields(outf,shifts)
     return 
 
-def loadbkg(fin='../HNL_histograms_Feb3_electrons.pickle',muon=False,cut=None,debug=True):
+def loadbkg(fin='../HNL_histograms_Feb3_electrons.pickle',muon=False,cut=None,debug=True,useOOT=True):
     from coffea import hist
 
     with open(fin,'rb')  as f:
@@ -370,23 +377,23 @@ def loadbkg(fin='../HNL_histograms_Feb3_electrons.pickle',muon=False,cut=None,de
         lumiScale = 1  
 
     h = out['dphi_cluster_csc'].integrate("dataset",datasets)
-    OOT = h.integrate("region","ABCD_OOT")
     hdt = out['dphi_cluster_dt'].integrate("dataset",datasets)
-    OOT_dt = hdt.integrate("region","ABCD_dt_OOT")
+    if useOOT:
+        h_region    = h.integrate("region","ABCD_OOT")
+        h_region_dt = hdt.integrate("region","ABCD_dt_OOT")
+    else:
+        h_region    = h.integrate("region","ABCD")
+        h_region_dt = hdt.integrate("region","ABCD_dt")
 
-    if cut==None:
-        ## nHit, dphi_lep, dphi_MET
-        dphi_lepCuts = np.linspace(0,np.pi,31)[1:-2]
-        # dphi_lepCuts[-2] ### 2.827
-        # dphi_lepCuts[-10] ###. 1.9896
-        if muon:
-            cut = {"CSC":(160,dphi_lepCuts[-2],0.7), "DT":(100,1.989,0.7)}
-        else:
-            cut = {"CSC":(160,dphi_lepCuts[-2],0.7), "DT":(100,dphi_lepCuts[-10],0.7)}
-    kfactor=0.25
-    CSC,CSC_unc = predIntimeFromOOT(OOT,cut['CSC'][0],cut["CSC"][1],cut['CSC'][2],False,kfactor,lumiScale)
-    kfactor=0.9
-    DT,DT_unc = predIntimeFromOOT(OOT_dt,cut["DT"][0],cut["DT"][1],cut["DT"][2],False,kfactor,lumiScale)
+    if useOOT:
+        kfactor=0.25
+        CSC,CSC_unc = predIntimeFromOOT(h_region,cut['CSC'][0],cut["CSC"][1],cut['CSC'][2],False,kfactor,lumiScale)
+        kfactor=0.9
+        DT,DT_unc = predIntimeFromOOT(h_region_dt,cut["DT"][0],cut["DT"][1],cut["DT"][2],False,kfactor,lumiScale)
+    else:
+        kfactor=1
+        CSC,CSC_unc = predIntimeFromOOT(h_region,cut['CSC'][0],cut["CSC"][1],cut['CSC'][2],True,kfactor,lumiScale)
+        DT,DT_unc   = predIntimeFromOOT(h_region_dt,cut["DT"][0],cut["DT"][1],cut["DT"][2],True,kfactor,lumiScale)
 
     if debug:
         print("bkg CSC = " ,CSC)
@@ -719,6 +726,8 @@ if __name__ == "__main__":
     parser.add_option('--dryRun', dest='dryRun', action='store_true',default = False, help='dryRun')
     parser.add_option('--loadbkg', dest='loadbkg', action='store_true',default = False, help='Load bkg from pickle')
     parser.add_option('--writeYields', dest='writeYields', action='store_true',default = False, help='write yield fields')
+    parser.add_option('--useOOT', dest='useOOT', action='store_true',default = False, help='useOOT for bkg ABCD prediction, use real ABC otherwise ')
+    parser.add_option('--unblind', dest='unblind', action='store_true',default = False, help='do not blind bin D if true ')
     parser.add_option('--muon', dest='muon', action='store_true',default = False, help='make muon datacard')
     parser.add_option('--tauSignals', dest='tauSignals', action='store_true',default = False, help='make tau signals datacard')
     (options, args) = parser.parse_args()
@@ -745,11 +754,13 @@ if __name__ == "__main__":
     elif options.test:
         print("Testing script ")
         outdir = "./test/"   ### 
-        cut = {"CSC":(200,dphi_lepcuts[-4],None), "DT":(130,dphi_lepcuts[-4],None)}
+        cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
         isMuon=True
-        #f_yield = "yields.json"
-        f_yield = "./combine/HNL_datacards/muon_v6/yields.json"
-        makeAllcards(f_yield,outdir,"",True)
+        f_yield = "yields.json"
+        #f_yield = "./combine/HNL_datacards/muon_v6/yields.json"
+        #makeAllcards(f_yield,outdir,"",True)
+        shifts={}
+        if options.writeYields: writeYields(cut,isMuon,f_yield,False,shifts,options.tauSignals,options.unblind,options.useOOT) 
     else:
         ### electron chan using muon cuts
         #outdir = "./combine/HNL_datacards/ele_muCuts/"
@@ -807,7 +818,7 @@ if __name__ == "__main__":
 
 
         if not options.muon:
-            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals) 
+            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals,options.unblind,options.useOOT) 
             else:   makeAllcards(f_yield,outdir,"",options.dryRun)
         #########################################
         #########################################
@@ -851,5 +862,5 @@ if __name__ == "__main__":
 
         f_yield = outdir+"yields.json"
         if options.muon:
-            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals) 
+            if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals,options.unblind,options.useOOT) 
             else:            makeAllcards(f_yield,outdir,"",options.dryRun)

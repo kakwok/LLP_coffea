@@ -67,6 +67,9 @@ with uproot.open("./metadata/WPT_v2.root") as f:
 with uproot.open("./metadata/wp-13tev-cms.root") as f:
     wpt_NLO = f['s_qt']
 
+with uproot.open("./metadata/WpT_NLO_scaleVar.root") as f:
+    h_nlo_unc = f['h_nlo_unc']
+
 wpt_NLO_normalized = wpt_NLO.values()/wpt_NLO.values().sum()
 wpt_NLO_err        = wpt_NLO.errors()/wpt_NLO.values().sum()
 wpt_LO_HNL_normalized = wpt_LO_HNL.values()/wpt_LO_HNL.values().sum()
@@ -74,11 +77,13 @@ wpt_LO_WJ_normalized = wpt_LO_WJ.values()/wpt_LO_WJ.values().sum()
 
 #ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
 corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
-corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
-corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
-corrections['wpt_WJ'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
-corrections['wpt_WJUp'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
-corrections['wpt_WJDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
+#corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+#corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+
+corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( 1+h_nlo_unc.values() , h_nlo_unc.axes[0].edges())
+corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( 1-h_nlo_unc.values() , h_nlo_unc.axes[0].edges())
+
+
 
 def read_xsections(filename):
     out = {}
@@ -103,15 +108,63 @@ corrections['xsections'] = read_xsections("metadata/xSections.dat")
 
 basedir="metadata/muonefficiencies/Run2/preUL/"
 ext = extractor()
-year=2018
-ext.add_weight_sets([f'muon_ID_2018_value NUM_TightID_DEN_TrackerMuons_pt_abseta {basedir}/2018/2018_Z/RunABCD_SF_ID.root'])
-ext.add_weight_sets([f'muon_ID_2018_error NUM_TightID_DEN_TrackerMuons_pt_abseta_error {basedir}/2018/2018_Z/RunABCD_SF_ID.root'])
-
-ext.add_weight_sets([f'muon_ISO_2018_value NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta {basedir}/2018/2018_Z/RunABCD_SF_ISO.root'])
-ext.add_weight_sets([f'muon_ISO_2018_error NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta_error {basedir}/2018/2018_Z/RunABCD_SF_ISO.root'])
-
-ext.add_weight_sets([f'muon_trigger_2018_value IsoMu24_PtEtaBins/efficienciesDATA/abseta_pt_DATA {basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root'])
-ext.add_weight_sets([f'muon_trigger_2018_error IsoMu24_PtEtaBins/efficienciesDATA/abseta_pt_DATA_error {basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root'])
+# From https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2018
+# From https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2017
+# From https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2016
+# ID
+local_names = ['muon_ID_2018_value',
+               'muon_ID_2017_value',
+               'muon_ID_2016_20fb_value',
+               'muon_ID_2016_16fb_value']
+hist_names =  ['NUM_TightID_DEN_TrackerMuons_pt_abseta',
+               'NUM_TightID_DEN_genTracks_pt_abseta'   ,
+               'NUM_TightID_DEN_genTracks_eta_pt'      ,
+               'NUM_TightID_DEN_genTracks_eta_pt'      ]
+file_names = [f'{basedir}/2018/2018_Z/RunABCD_SF_ID.root',
+              f'{basedir}/2017/2017_Z/RunBCDEF_SF_ID_syst.root',
+              f'{basedir}/2016/2016_Z/RunBCDEF_SF_ID.root',
+              f'{basedir}/2016/2016_Z/RunGH_SF_ID.root' ]
+def add_weights(ext,local_names,hist_names,file_names):
+    for local_name,hist_name,file_name in zip(local_names,hist_names,file_names):
+        weight_key = f'{local_name} {hist_name} {file_name}'
+        ext.add_weight_sets([weight_key])
+        err_name = local_name.replace("_value","_error")
+        weight_key = f'{err_name} {hist_name}_error {file_name}' # errors 
+        ext.add_weight_sets([weight_key])
+    return
+add_weights(ext,local_names,hist_names,file_names)
+# ISO
+local_names = ['muon_ISO_2018_value',
+               'muon_ISO_2017_value',
+               'muon_ISO_2016_20fb_value',
+               'muon_ISO_2016_16fb_value']
+hist_names =  ['NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta',
+               'NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta'   ,
+               'NUM_TightRelIso_DEN_TightIDandIPCut_eta_pt'      ,
+               'NUM_TightRelIso_DEN_TightIDandIPCut_eta_pt'      ]
+file_names = [f'{basedir}/2018/2018_Z/RunABCD_SF_ISO.root',
+              f'{basedir}/2017/2017_Z/RunBCDEF_SF_ISO_syst.root',
+              f'{basedir}/2016/2016_Z/RunBCDEF_SF_ISO.root',
+              f'{basedir}/2016/2016_Z/RunGH_SF_ISO.root' ]
+add_weights(ext,local_names,hist_names,file_names)
+# trigger  
+local_names = ['muon_trigger_2018_9fb_value',
+               'muon_trigger_2018_50fb_value',
+               'muon_trigger_2017_value',
+               'muon_trigger_2016_20fb_value',
+               'muon_trigger_2016_16fb_value']
+hist_names =  ['IsoMu24_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_PtEtaBins/abseta_pt_ratio',
+                'IsoMu27_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_OR_IsoTkMu24_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_OR_IsoTkMu24_PtEtaBins/abseta_pt_ratio']
+file_names = [
+              f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root',
+              f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_AfterMuonHLTUpdate.root',
+              f'{basedir}/2017/2017_trigger/EfficienciesAndSF_RunBtoF_Nov17Nov2017.root',
+              f'{basedir}/2016/2016_trigger/EfficienciesAndSF_RunBtoF.root',
+              f'{basedir}/2016/2016_trigger/EfficienciesAndSF_RunGtoH.root' ]
+add_weights(ext,local_names,hist_names,file_names)
 
 ext.finalize()
 lepsf_evaluator = ext.make_evaluator()

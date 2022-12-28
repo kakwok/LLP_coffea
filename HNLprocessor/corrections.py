@@ -72,19 +72,41 @@ def reweightXsec(ctau,mass,isTau=False):
         return  HNLutil.f_xsec(mass)(ctau)
 
 # Root files from https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2018#Medium_pT_from_15_to_120_GeV
-def add_muonSFs(weights, leadingmuon):
+# add weights with keys = muon_[ID/ISO/trigger]_[2016/2017/2018]_[value/error]
+def add_muonSFs(weights, leadingmuon, year):
 
-    for sf in compiled['muonsf_keys']:
+    lep_pt = np.array(ak.fill_none(leadingmuon.pt, 0.))
+    lep_eta = np.array(ak.fill_none(leadingmuon.eta, 0.))
 
-        lep_pt = np.array(ak.fill_none(leadingmuon.pt, 0.))
-        lep_eta = np.array(ak.fill_none(leadingmuon.eta, 0.))
-
-        if 'value' in sf:
-            
-            nom = compiled['muonsf_evaluator'][sf](np.abs(lep_eta),lep_pt)
+    if year=="2016":
+        for sf in ['muon_ID_%s_20fb_value'%year,'muon_ISO_%s_20fb_value'%year,'muon_trigger_%s_20fb_value'%year]:
+            nom_20fb   = compiled['muonsf_evaluator'][sf](np.abs(lep_eta),lep_pt)
+            nom_16fb   = compiled['muonsf_evaluator'][sf.replace("20fb","16fb")](np.abs(lep_eta),lep_pt)
+            nom = (nom_20fb *20 + nom_16fb*16)/ (20+16)
+            shift_20fb = compiled['muonsf_evaluator'][sf.replace('_value','_error')](np.abs(lep_eta),lep_pt)
+            shift_16fb = compiled['muonsf_evaluator'][sf.replace('_value','_error').replace("20fb","16fb")](np.abs(lep_eta),lep_pt)
+            shift = (shift_20fb *20 + shift_16fb*16)/ (20+16)
+            sf_weighted = sf.replace("_20fb","")
+            weights.add(sf_weighted, nom, shift, shift=True)
+    if year=="2017":
+        for sf in ['muon_ID_%s_value'%year,'muon_ISO_%s_value'%year,'muon_trigger_%s_value'%year]:
+            nom   = compiled['muonsf_evaluator'][sf](np.abs(lep_eta),lep_pt)
             shift = compiled['muonsf_evaluator'][sf.replace('_value','_error')](np.abs(lep_eta),lep_pt)
-                      
             weights.add(sf, nom, shift, shift=True)
+    if year=="2018": 
+        for sf in ['muon_ID_%s_value'%year,'muon_ISO_%s_value'%year]:
+            nom   = compiled['muonsf_evaluator'][sf](np.abs(lep_eta),lep_pt)
+            shift = compiled['muonsf_evaluator'][sf.replace('_value','_error')](np.abs(lep_eta),lep_pt)
+            weights.add(sf, nom, shift, shift=True)
+        nom_9fb  = compiled['muonsf_evaluator']['muon_trigger_2018_9fb_value'](np.abs(lep_eta),lep_pt)
+        nom_50fb = compiled['muonsf_evaluator']['muon_trigger_2018_50fb_value'](np.abs(lep_eta),lep_pt)
+        nom = (nom_9fb * 8.95 + nom_50fb*50.78)/ (50.78+8.95)
+        shift_9fb  = compiled['muonsf_evaluator']['muon_trigger_2018_9fb_error'](np.abs(lep_eta),lep_pt)
+        shift_50fb = compiled['muonsf_evaluator']['muon_trigger_2018_50fb_error'](np.abs(lep_eta),lep_pt)
+        shift = (shift_9fb * 8.95 + shift_50fb*50.78)/ (50.78+8.95)
+        weights.add("muon_trigger_2018_value", nom, shift, shift=True)
+    return
+                  
 
 # Root files from: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#Electron_Scale_Factors
 def add_electronSFs(weights, leadingelectron,year):

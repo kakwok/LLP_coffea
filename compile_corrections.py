@@ -150,17 +150,20 @@ add_weights(ext,local_names,hist_names,file_names)
 # trigger  
 local_names = ['muon_trigger_2018_9fb_value',
                'muon_trigger_2018_50fb_value',
+               'muon_trigger_2018_wrong_value',
                'muon_trigger_2017_value',
                'muon_trigger_2016_20fb_value',
                'muon_trigger_2016_16fb_value']
 hist_names =  ['IsoMu24_PtEtaBins/abseta_pt_ratio',
                 'IsoMu24_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_PtEtaBins/efficienciesDATA/abseta_pt_DATA',
                 'IsoMu27_PtEtaBins/abseta_pt_ratio',
                 'IsoMu24_OR_IsoTkMu24_PtEtaBins/abseta_pt_ratio',
                 'IsoMu24_OR_IsoTkMu24_PtEtaBins/abseta_pt_ratio']
 file_names = [
               f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root',
               f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_AfterMuonHLTUpdate.root',
+              f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root',
               f'{basedir}/2017/2017_trigger/EfficienciesAndSF_RunBtoF_Nov17Nov2017.root',
               f'{basedir}/2016/2016_trigger/EfficienciesAndSF_RunBtoF.root',
               f'{basedir}/2016/2016_trigger/EfficienciesAndSF_RunGtoH.root' ]
@@ -172,12 +175,20 @@ lepsf_keys = lepsf_evaluator.keys()
 
 corrections['muonsf_evaluator'] = lepsf_evaluator
 corrections['muonsf_keys'] = lepsf_keys
-
-basedir="metadata/electron/egammaEffi.root"
+print("muon SFs:",lepsf_keys)
+ele_reco_SF_2018="metadata/electron/egammaEffi.root"
+ele_reco_SF_2017="metadata/electron/2017_ElectronTight.root"
+ele_reco_SF_2016="metadata/electron/2016LegacyReReco_ElectronTight_Fall17V2.root"
 ele_sf="metadata/electron/ele_trigSF.root"
 ext = extractor()
-ext.add_weight_sets([f'electron_SF_2018_value EGamma_SF2D {basedir}'])
-ext.add_weight_sets([f'electron_SF_2018_error EGamma_SF2D_error {basedir}'])
+ext.add_weight_sets([f'electron_SF_2018_value EGamma_SF2D {ele_reco_SF_2018}'])
+ext.add_weight_sets([f'electron_SF_2018_error EGamma_SF2D_error {ele_reco_SF_2018}'])
+
+ext.add_weight_sets([f'electron_SF_2017_value EGamma_SF2D {ele_reco_SF_2017}'])
+ext.add_weight_sets([f'electron_SF_2017_error EGamma_SF2D_error {ele_reco_SF_2017}'])
+
+ext.add_weight_sets([f'electron_SF_2016_value EGamma_SF2D {ele_reco_SF_2016}'])
+ext.add_weight_sets([f'electron_SF_2016_error EGamma_SF2D_error {ele_reco_SF_2016}'])
 
 ext.add_weight_sets([f'electron_trigger_SF_2018_value h_ele32_wptTight_2018 {ele_sf}'])
 ext.add_weight_sets([f'electron_trigger_SF_2018_error h_ele32_wptTight_2018_err {ele_sf}'])
@@ -194,5 +205,6 @@ lepsf_keys = lepsf_evaluator.keys()
 
 corrections['elesf_evaluator'] = lepsf_evaluator
 corrections['elesf_keys'] = lepsf_keys
+print("electron SFs:",lepsf_keys)
 
 save(corrections, 'corrections.coffea')

@@ -90,13 +90,21 @@ def add_muonSFs(weights, leadingmuon, year):
             weights.add(sf_weighted, nom, shift, shift=True)
     if year=="2017":
         for sf in ['muon_ID_%s_value'%year,'muon_ISO_%s_value'%year,'muon_trigger_%s_value'%year]:
-            nom   = compiled['muonsf_evaluator'][sf](np.abs(lep_eta),lep_pt)
-            shift = compiled['muonsf_evaluator'][sf.replace('_value','_error')](np.abs(lep_eta),lep_pt)
+            if "trigger" in sf:
+                x = np.abs(lep_eta)
+                y = lep_pt
+            else:
+                x = lep_pt
+                y = np.abs(lep_eta)
+            nom   = compiled['muonsf_evaluator'][sf](x,y)
+            shift = compiled['muonsf_evaluator'][sf.replace('_value','_error')](x,y)
             weights.add(sf, nom, shift, shift=True)
     if year=="2018": 
         for sf in ['muon_ID_%s_value'%year,'muon_ISO_%s_value'%year]:
-            nom   = compiled['muonsf_evaluator'][sf](np.abs(lep_eta),lep_pt)
-            shift = compiled['muonsf_evaluator'][sf.replace('_value','_error')](np.abs(lep_eta),lep_pt)
+            x = lep_pt
+            y = np.abs(lep_eta)
+            nom   = compiled['muonsf_evaluator'][sf](x,y)
+            shift = compiled['muonsf_evaluator'][sf.replace('_value','_error')](x,y)
             weights.add(sf, nom, shift, shift=True)
         nom_9fb  = compiled['muonsf_evaluator']['muon_trigger_2018_9fb_value'](np.abs(lep_eta),lep_pt)
         nom_50fb = compiled['muonsf_evaluator']['muon_trigger_2018_50fb_value'](np.abs(lep_eta),lep_pt)
@@ -104,7 +112,11 @@ def add_muonSFs(weights, leadingmuon, year):
         shift_9fb  = compiled['muonsf_evaluator']['muon_trigger_2018_9fb_error'](np.abs(lep_eta),lep_pt)
         shift_50fb = compiled['muonsf_evaluator']['muon_trigger_2018_50fb_error'](np.abs(lep_eta),lep_pt)
         shift = (shift_9fb * 8.95 + shift_50fb*50.78)/ (50.78+8.95)
+        
+        nom_wrong = compiled['muonsf_evaluator']['muon_trigger_2018_wrong_value'](np.abs(lep_eta),lep_pt)
+        shift_wrong = compiled['muonsf_evaluator']['muon_trigger_2018_wrong_value'](np.abs(lep_eta),lep_pt)
         weights.add("muon_trigger_2018_value", nom, shift, shift=True)
+        #weights.add("muon_trigger_wrong_value", nom_wrong, shift_wrong, shift=True)
     return
                   
 
@@ -114,9 +126,9 @@ def add_electronSFs(weights, leadingelectron,year):
     lep_pt = np.array(ak.fill_none(leadingelectron.pt, 0.))
     lep_eta = np.array(ak.fill_none(leadingelectron.eta, 0.))
 
-    nom = compiled['elesf_evaluator']["electron_SF_2018_value"](np.abs(lep_eta),lep_pt)
-    shift = compiled['elesf_evaluator']["electron_SF_2018_error"](np.abs(lep_eta),lep_pt)
-    weights.add("electron_SF_2018_value", nom, shift, shift=True)
+    nom = compiled['elesf_evaluator']["electron_SF_%s_value"%year](np.abs(lep_eta),lep_pt)
+    shift = compiled['elesf_evaluator']["electron_SF_%s_error"%year](np.abs(lep_eta),lep_pt)
+    weights.add("electron_ID_SF_value", nom, shift, shift=True)
     ## add trigger SF
     nom   = compiled['elesf_evaluator']["electron_trigger_SF_%s_value"%year](np.abs(lep_eta),lep_pt)
     shift = compiled['elesf_evaluator']["electron_trigger_SF_%s_error"%year](np.abs(lep_eta),lep_pt)

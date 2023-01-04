@@ -26,8 +26,8 @@ ak.behavior.update(candidate.behavior)
 
 
 class ttbarProcessor(MyProcessor):
-    def __init__(self,isElectronChannel=True,saveSkim=False,debug=False):
-        super().__init__(isElectronChannel,saveSkim,debug)
+    def __init__(self,isElectronChannel=True,**options):
+        super().__init__(isElectronChannel,**options)
         hdict={
              "nbjet": hist.Hist("Events",dataset_axis,region_axis,
                 hist.Bin("nbjet", "nbjet", 4, 0, 4)
@@ -84,7 +84,7 @@ class ttbarProcessor(MyProcessor):
         dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
         DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones"]
         DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
-        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time"]
+        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
         selectionMasks['dt_cls_ABCD'] = buildMask(dt_clusterMasks,DT_sel_ABCD)         

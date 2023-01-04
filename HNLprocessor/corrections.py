@@ -126,8 +126,8 @@ def add_electronSFs(weights, leadingelectron,year):
     lep_pt = np.array(ak.fill_none(leadingelectron.pt, 0.))
     lep_eta = np.array(ak.fill_none(leadingelectron.eta, 0.))
 
-    nom = compiled['elesf_evaluator']["electron_SF_%s_value"%year](np.abs(lep_eta),lep_pt)
-    shift = compiled['elesf_evaluator']["electron_SF_%s_error"%year](np.abs(lep_eta),lep_pt)
+    nom = compiled['elesf_evaluator']["electron_ID_SF_%s_value"%year](np.abs(lep_eta),lep_pt)
+    shift = compiled['elesf_evaluator']["electron_ID_SF_%s_error"%year](np.abs(lep_eta),lep_pt)
     weights.add("electron_ID_SF_value", nom, shift, shift=True)
     ## add trigger SF
     nom   = compiled['elesf_evaluator']["electron_trigger_SF_%s_value"%year](np.abs(lep_eta),lep_pt)

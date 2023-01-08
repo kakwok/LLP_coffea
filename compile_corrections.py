@@ -80,8 +80,29 @@ corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized 
 #corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
 #corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
 
-corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( 1+h_nlo_unc.values() , h_nlo_unc.axes[0].edges())
-corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( 1-h_nlo_unc.values() , h_nlo_unc.axes[0].edges())
+#### Look up DYTURBO values in each h_nlo bins
+norm_corr = wpt_NLO_normalized /wpt_LO_HNL_normalized
+corr_up = []
+corr_down = []
+
+DYTURBO_ptbin=wpt_NLO.axes[0].edges()      # 0 - 1500
+NLO_ptbin = h_nlo_unc.axes[0].edges()      # 0 - 250
+#index where NLO pt bin in DYTURBO_ptbin
+# overlaps = np.where(np.in1d(NLO_ptbin,DYTURBO_ptbin))[0][1:]
+overlaps = np.array([  5 , 10 , 15,  20,  25  ,30 , 35,  40  ,45  ,50 , 60,  70 , 80 , 90, 100 ,125, 150 ,200,300])
+
+DY_ipt=0
+for i,pt in enumerate(h_nlo_unc.axes[0].edges()[:-1]):  # n-1 bins
+    if i>=overlaps[DY_ipt]:
+        if DY_ipt<len(overlaps)-1: DY_ipt+=1
+    #print(pt, h_unc.values()[i],overlaps[DY_ipt],DYTURBO_ptbin[DY_ipt], wpt_NLO_normalized[DY_ipt])
+    corr_up.append(  norm_corr[DY_ipt]*(1+h_nlo_unc.values()[i]))
+    corr_down.append(norm_corr[DY_ipt]*(1-h_nlo_unc.values()[i]))
+corr_up = np.array(corr_up)
+corr_down = np.array(corr_down)
+
+corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( corr_up , h_nlo_unc.axes[0].edges())
+corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( corr_down , h_nlo_unc.axes[0].edges())
 
 
 
@@ -176,19 +197,20 @@ lepsf_keys = lepsf_evaluator.keys()
 corrections['muonsf_evaluator'] = lepsf_evaluator
 corrections['muonsf_keys'] = lepsf_keys
 print("muon SFs:",lepsf_keys)
-ele_reco_SF_2018="metadata/electron/egammaEffi.root"
-ele_reco_SF_2017="metadata/electron/2017_ElectronTight.root"
-ele_reco_SF_2016="metadata/electron/2016LegacyReReco_ElectronTight_Fall17V2.root"
+ele_reco_SF_2018="metadata/electron/egammaEffi.root"  ## this is reco SF
+ele_ID_SF_2018="metadata/electron/2018_ElectronTight.root"
+ele_ID_SF_2017="metadata/electron/2017_ElectronTight.root"
+ele_ID_SF_2016="metadata/electron/2016LegacyReReco_ElectronTight_Fall17V2.root"
 ele_sf="metadata/electron/ele_trigSF.root"
 ext = extractor()
-ext.add_weight_sets([f'electron_SF_2018_value EGamma_SF2D {ele_reco_SF_2018}'])
-ext.add_weight_sets([f'electron_SF_2018_error EGamma_SF2D_error {ele_reco_SF_2018}'])
+ext.add_weight_sets([f'electron_ID_SF_2018_value EGamma_SF2D {ele_ID_SF_2018}'])
+ext.add_weight_sets([f'electron_ID_SF_2018_error EGamma_SF2D_error {ele_ID_SF_2018}'])
 
-ext.add_weight_sets([f'electron_SF_2017_value EGamma_SF2D {ele_reco_SF_2017}'])
-ext.add_weight_sets([f'electron_SF_2017_error EGamma_SF2D_error {ele_reco_SF_2017}'])
+ext.add_weight_sets([f'electron_ID_SF_2017_value EGamma_SF2D {ele_ID_SF_2017}'])
+ext.add_weight_sets([f'electron_ID_SF_2017_error EGamma_SF2D_error {ele_ID_SF_2017}'])
 
-ext.add_weight_sets([f'electron_SF_2016_value EGamma_SF2D {ele_reco_SF_2016}'])
-ext.add_weight_sets([f'electron_SF_2016_error EGamma_SF2D_error {ele_reco_SF_2016}'])
+ext.add_weight_sets([f'electron_ID_SF_2016_value EGamma_SF2D {ele_ID_SF_2016}'])
+ext.add_weight_sets([f'electron_ID_SF_2016_error EGamma_SF2D_error {ele_ID_SF_2016}'])
 
 ext.add_weight_sets([f'electron_trigger_SF_2018_value h_ele32_wptTight_2018 {ele_sf}'])
 ext.add_weight_sets([f'electron_trigger_SF_2018_error h_ele32_wptTight_2018_err {ele_sf}'])

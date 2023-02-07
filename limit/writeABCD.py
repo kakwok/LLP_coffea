@@ -460,19 +460,28 @@ def loadhist(fin='../HNL_histograms_Feb23_muons_signal.pickle',muon=True,cut=Non
             signal_dt_MB2 = hdt.integrate("dataset",signal_name).integrate("region","ABCD_dt_MB2")
             signal_dt_MB34 = hdt.integrate("dataset",signal_name).integrate("region","ABCD_dt_MB34")
 
-        dphi_lepCuts = np.linspace(0,np.pi,31)[1:-2]
         ### NOT USED FOR SIGNAL
         lumi = 1
         kfactor=1     ## Muon, CSC InT/OOT 
 
         ## CSC cuts
+        CSC_cls_SF = (1-0.015)*(1-0.033)*(1-0.060)   ## ~0.9
         CSC,CSC_unc = predIntimeFromOOT(signal,cut["CSC"][0],cut["CSC"][1],cut["CSC"][2],True,kfactor,lumi)
+        CSC     *=  CSC_cls_SF
+        CSC_unc *=  CSC_cls_SF
 
         ### DT cuts
+        DT_cls_SF = 0.907*0.932*0.910        ## ~0.76
         DT,DT_unc = predIntimeFromOOT(signal_dt,cut["DT"][0],cut["DT"][1],cut["DT"][2],True,kfactor,lumi)
+        DT *=DT_cls_SF
+        DT_unc*=DT_cls_SF
         if hasMB2:
             DT_MB2,DT_MB2_unc = predIntimeFromOOT(signal_dt_MB2,cut["DT"][0],cut["DT"][1],cut["DT"][2],True,kfactor,lumi)
             DT_MB34,DT_MB34_unc = predIntimeFromOOT(signal_dt_MB34,cut["DT"][0],cut["DT"][1],cut["DT"][2],True,kfactor,lumi)
+            DT_MB2 *= DT_cls_SF
+            DT_MB2_unc *= DT_cls_SF
+            DT_MB34 *= DT_cls_SF
+            DT_MB34_unc *= DT_cls_SF
         if "rwctau" in signal_name:
             ct = signal_name.split("_")[-1].replace("rwctau","pl")
             sample_name = ("_".join(signal_name.split("_")[:-2]+[ct]))
@@ -612,11 +621,12 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             
         for name,signal in data.items():
             if "bkg" in name: continue
-            #if not ("1p6" in name or "1p7" in name):  continue
+            #if not ("3p" in name ):  continue
             if suffix:
                 name = name+suffix
             #norm = 1
             norm = signal["norm"]
+
             sigRate = {"HNL":np.array(signal["CSC"])/norm }
             obs = bkg_rate_CSC['bkg']
             obs[-1] = bkg_rate_CSC['bkg'][0]*bkg_rate_CSC['bkg'][2]/bkg_rate_CSC['bkg'][1]  ## force D=A*C/B
@@ -638,44 +648,39 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             def Run(cmd,test=False):
                 print(cmd)
                 if not test: os.system(cmd)
-            csc_limit = "combine -M AsymptoticLimits {odir}{name}_CSC.txt -n _{name}_CSC --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
-            
-            Run(csc_limit,test)
-            Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_CSC",outdir),test)
-
-            dt_limit = "combine -M AsymptoticLimits {odir}{name}_DT.txt -n _{name}_DT --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
-            Run(dt_limit,test)
-            Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_DT",outdir),test)
+                return
+            def RunLimit(outdir,name,tag1,tag2=None,tag3=None,test=False):
+                if tag2 is None:
+                    cmd = "combine -M AsymptoticLimits {odir}{name}_{tag1}.txt -n _{name}_{tag1} --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
+                    Run(cmd,test)
+                    Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_"+tag1,outdir),test)
+                else:
+                    cmd = "python combination.py {tag1}={odir}{name}_{tag1}.txt {tag2}={odir}{name}_{tag2}.txt {odir}{name}_{tag3}.txt".format(name=name,tag1=tag1,tag2=tag2,tag3=tag3,odir=outdir)
+                    Run(cmd,test)
+                    cmd = "combine -M AsymptoticLimits {odir}{name}_{tag3}.txt -n _{name}_{tag3} --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,tag3=tag3,odir=outdir,norm=1)
+                    Run(cmd,test)
+                    Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_"+tag3,outdir),test)
+                return
+                    
+            #RunLimit(outdir,name,"CSC",None,None,test)
+            #RunLimit(outdir,name,"DT",None,None,test)
             if hasMB2:
-                dt_limit = "combine -M AsymptoticLimits {odir}{name}_DT_MB2.txt -n _{name}_DT_MB2 --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
-                Run(dt_limit,test)
-                Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_DT_MB2",outdir),test)
-                dt_limit = "combine -M AsymptoticLimits {odir}{name}_DT_MB34.txt -n _{name}_DT_MB34 --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
-                Run(dt_limit,test)
-                Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_DT_MB34",outdir),test)
-                cmd = "python combination.py DT_MB2={odir}{name}_DT_MB2.txt DT_MB34={odir}{name}_DT_MB34.txt {odir}{name}_DTcomb.txt".format(name=name,odir=outdir)
-
+                #RunLimit(outdir,name,"DT_MB2",None,None,test)
+                #RunLimit(outdir,name,"DT_MB34",None,None,test)
+                #RunLimit(outdir,name,"DT_MB2","DT_MB34","DTcomb",test)
+                pass
+            #Combination
             if hasMB2:
-                cmd = "python combination.py CSC={odir}{name}_CSC.txt DT={odir}{name}_DTcomb.txt {odir}{name}_comb.txt".format(name=name,odir=outdir)
+                #RunLimit(outdir,name,"CSC","DTcomb","comb",test)
+                RunLimit(outdir,name,"CSC","DT_MB34","combNoMB2",test)
             else:
-                cmd = "python combination.py CSC={odir}{name}_CSC.txt DT={odir}{name}_DT.txt {odir}{name}_comb.txt".format(name=name,odir=outdir)
-            Run(cmd,test)
-            cmd = "combine -M AsymptoticLimits {odir}{name}_comb.txt -n _{name}_comb --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,odir=outdir,norm=1)
-            Run(cmd,test)
-            Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_comb",outdir),test)
+                RunLimit(outdir,name,"CSC","DT","comb",test)
+            
+    return 
+
                
 import sys
 sys.path.insert(0,"../")
-#def f_1m(x):
-#    x0 = np.array([1,2,4,5,7,10])
-#    #y0 = np.array([13.57,0.4238,0.01289,0.004156,0.0007452,0.000121])   ## old xsec 
-#    y0 = np.array([8.492,0.2653,0.00809,2.612E-03,4.721E-04,7.751E-05])    
-#    return np.exp(np.poly1d(np.polyfit(x0,np.log(y0),5))(x))
-#
-#def f_xsec(m):
-#    def xsec_m(x):
-#        return f_1m(m)/(x/1000.)
-#    return xsec_m 
 
 # Find the corresponding yield of (m,ct)-> (m,xx)
 def shift_ctau(N_yield,m_old,ct_old,m_new,forTauHNL=False):
@@ -827,13 +832,16 @@ if __name__ == "__main__":
         #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
         #outdir = "./combine/HNL_datacards/ele_v11/"   ###  v11, new 2018 ele pT cuts, ID SF fixes (Jan4 pickles)
         #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
-        #outdir = "./combine/HNL_datacards/ele_v12/"   ###  v11, 150DT cut (Jan4 pickles) OOTxTF
+        #outdir = "./combine/HNL_datacards/ele_v12/"   ###  v12, 150DT cut (Jan4 pickles) OOTxTF
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
-        outdir = "./combine/HNL_datacards/tau_v2/ele/"   ### tau v2: 150 DT, real ABC
+        outdir = "./combine/HNL_datacards/ele_v13/"   ###  v13, 150DT cut (Jan4 pickles) ABCD, CSC,DT cls SF 
         cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
+        #outdir = "./combine/HNL_datacards/tau_v2/ele/"   ### tau v2: 150 DT, real ABC
+        #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         isMuon=False
 
         f_yield = outdir+"yields.json"
+        print("        yields = ", f_yield)
         if options.tauSignals:
             # shifts for tau HNLs
             shifts = [
@@ -850,14 +858,14 @@ if __name__ == "__main__":
             ]
         else:
             shifts = [
-                {"m_src":4.0,"m_target":2.5,"isTau":False},
-                {"m_src":4.0,"m_target":2.8,"isTau":False},
-                #{"m_src":4.0,"m_target":3.0,"isTau":False},
-                #{"m_src":4.0,"m_target":3.1,"isTau":False},
-                #{"m_src":4.0,"m_target":3.2,"isTau":False},
-                #{"m_src":4.0,"m_target":3.3,"isTau":False},
-                #{"m_src":4.0,"m_target":3.4,"isTau":False},
-                #{"m_src":4.0,"m_target":3.5,"isTau":False},
+                #{"m_src":4.0,"m_target":2.5,"isTau":False},
+                #{"m_src":4.0,"m_target":2.8,"isTau":False},
+                {"m_src":4.0,"m_target":3.0,"isTau":False},
+                {"m_src":4.0,"m_target":3.1,"isTau":False},
+                {"m_src":4.0,"m_target":3.2,"isTau":False},
+                {"m_src":4.0,"m_target":3.3,"isTau":False},
+                {"m_src":4.0,"m_target":3.4,"isTau":False},
+                {"m_src":4.0,"m_target":3.5,"isTau":False},
             ]                                       
         if not options.muon:
             if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals,options.unblind,options.useOOT) 
@@ -888,7 +896,6 @@ if __name__ == "__main__":
         #outdir = "./combine/HNL_datacards/muon_v10/"   ### v10 == v9 + Zmumubkg (TF 5.6%/1.3%) at 150/220 
         #cut = {"CSC":(220,dphi_lepcuts[-2],None), "DT":(150,dphi_lepcuts[-2],None)}
         #########################################
-        print("Working on muon Channel: ")
         #outdir = "./combine/HNL_datacards/muon_v11/"   ### v11 , full run 2, looseeID, new timing 
         #cut = {"CSC":(200,2.8,None), "DT":(130,2.8,None)}
         #outdir = "./combine/HNL_datacards/muon_v12/"   ### v12 , full run 2,no looseID, new timing 
@@ -905,7 +912,7 @@ if __name__ == "__main__":
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #outdir = "./combine/HNL_datacards/muon_v18/"   ### v18 , as in v17, (Dec23 signal), ABCD 
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
-        outdir = "./combine/HNL_datacards/muon_v19/"   ### v18 , as in v17, (Jan9 signal), ABCD, split MB2,MB34 
+        outdir = "./combine/HNL_datacards/muon_v19/"   ### v18 , as in v17, (Jan9 signal), ABCD, split MB2,MB34, apply CSC,DT_cls_SF 
         cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #########################################
         #outdir = "./combine/HNL_datacards/tau_v1/mu/"   ### v1 
@@ -915,6 +922,8 @@ if __name__ == "__main__":
         isMuon=True
 
         f_yield = outdir+"yields.json"
+        print("Working on muon Channel: ")
+        print("        yields = ", f_yield)
         if options.muon:
             if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals,options.unblind,options.useOOT) 
             else:            makeAllcards(f_yield,outdir,"",options.dryRun)

@@ -167,9 +167,9 @@ class MyProcessor(processor.ProcessorABC):
             'r':events.gLLP_decay_vertex_r,
             'ctau':events.gLLP_ctau,
         })
-        llp['csc_loose']= (abs(llp.eta)<2.4) & (llp.r<695.5) &( abs(llp.z)>400) &( abs(llp.z)<1100)
+        llp['csc_loose']= (abs(llp.eta)<2.4) &(abs(llp.eta)>1.9)& (llp.r<695.5) &( abs(llp.z)>400) &( abs(llp.z)<1100)
         llp['dt_loose'] = (abs(llp.z)<661) & (llp.r>200) & (llp.r<800) 
-        llp['csc_tight']= (abs(llp.eta)<2.4) & (llp.r<695.5) &( abs(llp.z)>730) &( abs(llp.z)<1100)
+        llp['csc_tight']= (abs(llp.eta)<2.4) &(abs(llp.eta)>1.9)& (llp.r<695.5) &( abs(llp.z)>730) &( abs(llp.z)<1100)
         llp['dt_tight'] = (abs(llp.z)<661) & (llp.r>460) & (llp.r<800) 
         self.llp = llp
         return llp 
@@ -344,6 +344,9 @@ class MyProcessor(processor.ProcessorABC):
                  "nMB1_cosmic_minus":events.dtRechitCluster_match_MB1hits_cosmics_minus,
                  "nMB1_cosmic_plus":events.dtRechitCluster_match_MB1hits_cosmics_plus,
                  "nMB1":events.dtRechitCluster_match_MB1hits_0p5,
+                 "nMB2":events.dtRechitClusterNSegmentStation2,
+                 "nMB3":events.dtRechitClusterNSegmentStation3,
+                 "nMB4":events.dtRechitClusterNSegmentStation4,
                  "rpcBx":events.dtRechitCluster_match_RPCBx_dPhi0p5,
                  "dphi_cluster_MET":events.dtRechitClusterMetEENoise_dPhi,
                  "dphi_cluster_lep":dphi_dt_cluster_lep,
@@ -405,6 +408,7 @@ class MyProcessor(processor.ProcessorABC):
         #dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) & (dt_cluster.MuonVetoLooseId==True))
         dt_muonVeto = ~( (dt_cluster.MuonVetoPt>10.0) )
         dt_MB1veto  = (dt_cluster.nMB1<=1)
+        dt_etaveto  = ~((abs(dt_cluster.eta)<=0.9) & (abs(dt_cluster.eta)>=0.78))
         dt_RPC      = (dt_cluster.nRPC>=1)
         dt_MB1adj   = (dt_cluster.nMB1_cosmic_minus<=8) & (dt_cluster.nMB1_cosmic_plus<=8)
         dt_time     = (dt_cluster.rpcBx==0)
@@ -416,21 +420,26 @@ class MyProcessor(processor.ProcessorABC):
         #dr_allMu      = (dt_cluster.dr_allMuPt5>0.8)
         dt_deadzones = ~(dt_cluster.Deadzone_1) & ~(dt_cluster.Deadzone_2)
         dt_noise      = (dt_cluster.IsNoise==False) 
+        dt_maxMB2      = (dt_cluster.MaxStation==2) 
+        dt_maxMB34     = (dt_cluster.MaxStation>=3) 
         clusterMasks = ak.zip({
                 "dt_jetVeto"  :dt_jetVeto  ,
                 "dt_muonVeto" :dt_muonVeto ,
                 "dt_MB1veto"  :dt_MB1veto  ,
+                "dt_etaveto"  :dt_etaveto  ,
                 "dt_RPC"      :dt_RPC      ,
                 "dt_MB1adj"   :dt_MB1adj   ,
                 "dt_time"     :dt_time     ,
                 "dt_OOT"      :dt_OOT      ,
                 "dt_dphi_MET" :dt_dphi_MET ,
                 "dt_size"     :dt_size     ,
-                "dr_lep"     :dr_lep     ,
+                "dr_lep"      :dr_lep     ,
                 #"dr_glbMu"     :dr_glbMu     ,
                 #"dr_allMu"     :dr_allMu     ,
                 "dt_deadzones": dt_deadzones,
-                "dt_noise": dt_noise,
+                "dt_maxMB2"   : dt_maxMB2,
+                "dt_maxMB34"  : dt_maxMB34,
+                "dt_noise"    : dt_noise,
         })
         return clusterMasks
     
@@ -528,16 +537,37 @@ class MyProcessor(processor.ProcessorABC):
         selectionMasks['cls_StatVeto']     =  buildMask(clusterMasks,['ME11_12_veto','MB1seg_veto','RB1_veto',"RE12_veto"])     
         selectionMasks['cls_JetMuVeto']    =  buildMask(clusterMasks,['jetVeto','muonVeto'])                
         selectionMasks['cls_JetMuStaVeto'] =  buildMask(clusterMasks,['jetVeto','muonVeto','ME11_12_veto','MB1seg_veto','RB1_veto',"RE12_veto"])
+        selectionMasks['MCclosure'] =  buildMask(clusterMasks,['dr_lep','jetVeto','muonVeto',"IntimeCut"])
 
-        DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_OOT" ]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
+        DT_sel_OOT      = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_OOT" ]
+        DT_sel_OOT_MB2      = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_maxMB2","dt_OOT" ]
+        DT_sel_OOT_MB34      = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_maxMB34","dt_OOT" ]
+        DT_sel_ABCD     = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
+        DT_sel_ABCD_MB2 = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_maxMB2","dt_time"]
+        DT_sel_ABCD_MB34 = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_maxMB34","dt_time"]
+
+        #DT_sel_ABCD     = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj",'dt_etaveto',"dt_deadzones","dt_noise","dt_time"]
+        #DT_sel_ABCD_MB2 = ["dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj",'dt_etaveto',"dt_deadzones","dt_noise","dt_maxMB2","dt_time"]
+        #DT_sel_ABCD_MB34 = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj",'dt_etaveto',"dt_deadzones","dt_noise","dt_maxMB34","dt_time"]
+
         DT_sel_vetos = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise"          ]
-        DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
+        DT_sel_negMB1      = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
+        DT_sel_negMB1_MB2  = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_maxMB2","dt_time"]
+        DT_sel_negMB1_MB34 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto" ,"dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_maxMB34","dt_time"]
+        
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
+        selectionMasks['dt_cls_OOT_MB2']  = buildMask(dt_clusterMasks,DT_sel_OOT_MB2)         
+        selectionMasks['dt_cls_OOT_MB34']  = buildMask(dt_clusterMasks,DT_sel_OOT_MB34)         
         selectionMasks['dt_cls_ABCD']  = buildMask(dt_clusterMasks,DT_sel_ABCD)         
+        selectionMasks['dt_cls_ABCD_MB2'] = buildMask(dt_clusterMasks,DT_sel_ABCD_MB2)         
+        selectionMasks['dt_cls_ABCD_MB34'] = buildMask(dt_clusterMasks,DT_sel_ABCD_MB34)         
         selectionMasks['dt_JetMuStaVeto'] =  buildMask(dt_clusterMasks,DT_sel_vetos)
         selectionMasks['dt_cls_negMB1'] = buildMask(dt_clusterMasks,DT_sel_negMB1)         
+        selectionMasks['dt_cls_negMB1_MB2'] = buildMask(dt_clusterMasks,DT_sel_negMB1_MB2)         
+        selectionMasks['dt_cls_negMB1_MB34'] = buildMask(dt_clusterMasks,DT_sel_negMB1_MB34)         
+        #selectionMasks['dt_MCclosure'] = buildMask(dt_clusterMasks,['dr_lep',"dt_jetVeto","dt_muonVeto","dt_time"])         
+        selectionMasks['dt_MCclosure'] = buildMask(dt_clusterMasks,['dr_lep',"dt_jetVeto",'dt_muonVeto'])         
 
         return selectionMasks
 
@@ -590,14 +620,19 @@ class MyProcessor(processor.ProcessorABC):
 
         #dictionary of cutName:masks
         selectionMasks =   self.buildSelectionMasks(events,good_lep,cluster,clusterMasks,dt_cluster,dt_clusterMasks)
+        selectionMasks['loose_ele'] = ak.num( ele[(ele.pt>20) & (abs(ele.eta)<2.5) & (ele.passId)],axis=1)==1
+        selectionMasks['loose_mu']  = ak.num( muons[(muons.pt>20) & (abs(muons.eta)<2.4) & (muons.passId)],axis=1)==1
 
         if self.isElectronChannel:
             preselections = ['trigger_ele','MET',"METfilters",'good_lepton']       
+            preselections_loose = ["loose_ele"]       
         else:
             preselections = ['trigger_mu','MET',"METfilters",'good_lepton']       
+            preselections_loose = ["loose_mu"]       
 
         CSC_sel_ABCD = ["dr_lep","ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto","RE12_veto","IntimeCut","timeSpreadCut","ClusterID"]
-        DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","dt_noise"]
+        #DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","dt_noise"]
+        DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_etaveto","dt_time","dt_deadzones","dt_noise"]
 
         regions = {
             "PreSel"       :preselections,            
@@ -608,9 +643,17 @@ class MyProcessor(processor.ProcessorABC):
             "ABCD_OOT"     :preselections+["cls_OOT"],
             "PreSel_dt"    :preselections,
             "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
+            "ABCD_dt_MB2"      :preselections+["dt_cls_ABCD_MB2"],            
+            "ABCD_dt_MB34"      :preselections+["dt_cls_ABCD_MB34"],            
             "ABCD_dt_OOT"  :preselections+["dt_cls_OOT"],
+            "ABCD_dt_OOT_MB2"  :preselections+["dt_cls_OOT_MB2"],
+            "ABCD_dt_OOT_MB34"  :preselections+["dt_cls_OOT_MB34"],
             "ABCD_dt_negMB1"       :preselections+["dt_cls_negMB1"],
+            "ABCD_dt_negMB1_MB2"       :preselections+["dt_cls_negMB1_MB2"],
+            "ABCD_dt_negMB1_MB34"       :preselections+["dt_cls_negMB1_MB34"],
             "JetMuStaVeto_dt" :preselections+["dt_JetMuStaVeto"],
+            "MCclosure_dt" :preselections_loose+["dt_MCclosure"],
+            "MCclosure" :preselections_loose+["MCclosure"],
             ##"1cls"         :preselections+["n_cls"],            
             #"StatVeto"     :preselections+["cls_StatVeto"],
             #"ele_W_CR"     :['trigger_ele','MET',"METfilters",'good_electron',"W_CR",],
@@ -652,7 +695,7 @@ class MyProcessor(processor.ProcessorABC):
             if self.isElectronChannel: channel ="ele_"
             else: channel ="muon_"
             filename = dataset + "_skim_"+channel + str(time.time()) + ".root"
-            destination = "root://cmseos.fnal.gov//store/user/kkwok/llp/HNL/skim/skim_dec22/"
+            destination = "root://cmseos.fnal.gov//store/user/kkwok/llp/HNL/skim/skim_Mar13/"
 
             cls_inTime_CR = (p & ak.any(
                                 (selectionMasks['cls_ABCD'] |selectionMasks['cls_OOT']) &
@@ -660,10 +703,15 @@ class MyProcessor(processor.ProcessorABC):
                                (abs(cluster.dphi_cluster_MET)>=0.7),axis=1)
                             )
             dt_cls_inTime_D = (p & ak.any((selectionMasks['dt_cls_ABCD']) &
-                               (dt_cluster.size>150) & (dt_cluster.size<180) &
+                               (dt_cluster.size>150)  &
                                (abs(dt_cluster.dphi_cluster_lep)>2.8),axis=1)
                             )
-            cut = (dt_cls_inTime_D)
+            csc_cls_inTime_D = (p & ak.any((selectionMasks['cls_ABCD']) &
+                               (cluster.size>200)  &
+                               (abs(cluster.dphi_cluster_lep)>2.8),axis=1)
+                            )
+
+            cut = (dt_cls_inTime_D)|(csc_cls_inTime_D)
 
             #cut = ak.num(cluster,axis=1)>=1 ## skim testing cut
             if ak.any(cut):
@@ -712,15 +760,15 @@ class MyProcessor(processor.ProcessorABC):
                                             dphi_lep =np.abs(ak.flatten(cluster[cut].dphi_cluster_lep)),
                                             dphi_MET=np.abs(ak.flatten(cluster[cut].dphi_cluster_MET)),
                                             weight=ak.flatten(w_cls))
-            cutnames = regions["ABCD_dt"]
-            cut = buildMask(selectionMasks,cutnames)
-            region = "ABCD_dt"
-            w_cls      = (weights.weight() * ak.ones_like(dt_cluster.size))[cut] ## use size to pick-up the cluster shape
-            output["dphi_cluster_dt"].fill(dataset=dataset,region=region,
-                                            ClusterSize=ak.flatten(dt_cluster[cut].size),
-                                            dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_lep)),
-                                            dphi_MET=np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_MET)),
-                                            weight=ak.flatten(w_cls))
+            for region in ["ABCD_dt","ABCD_dt_MB2","ABCD_dt_MB34"]:
+                cutnames = regions[region]
+                cut = buildMask(selectionMasks,cutnames)
+                w_cls      = (weights.weight() * ak.ones_like(dt_cluster.size))[cut] ## use size to pick-up the cluster shape
+                output["dphi_cluster_dt"].fill(dataset=dataset,region=region,
+                                                ClusterSize=ak.flatten(dt_cluster[cut].size),
+                                                dphi_lep =np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_lep)),
+                                                dphi_MET=np.abs(ak.flatten(dt_cluster[cut].dphi_cluster_MET)),
+                                                weight=ak.flatten(w_cls))
             return output
 
         if not isData and self._runSys:
@@ -741,6 +789,8 @@ class MyProcessor(processor.ProcessorABC):
                 else:
                     ## Varied weight (i.e. all sys but varies sys_name)
                     w_cls = ak.flatten((weights.weight(sys_name) * ak.ones_like(cls.size))[cut])
+                    if self._debug:
+                        print(sys_name, "weight = ",np.mean(w_cls))
                     h.fill(dataset=dataset,syst=sys_name,ClusterSize=nhit,dphi_lep=dphi_lep,weight=w_cls)
 
             year = self._year
@@ -799,22 +849,34 @@ class MyProcessor(processor.ProcessorABC):
             output["metXYCorr"].fill(dataset=dataset,region="gLLP_dt",metXYCorr=events[cut].metXYCorr,weight=weights.weight()[cut]) 
 
             ## get CSC cluster masks
-            cut = selectionMasks["Acceptance_csc_loose"] 
 
             #Events with clusterID pass
             #llp_selection = maskAndFill(llp.e,ak.any(cluster[cut].llp_match,axis=1),len(llp.e[0])*[0])
             #Events with any cluster matching to llp
-            llp_selection = ak.values_astype( ak.any(cluster.llp_match,axis=1),np.int )
+            #llp_selection = ak.values_astype( ak.any(cluster.llp_match,axis=1),np.int )
+            llp_dau = util.pack(events,"gLLP_daughter_")
+            for region in [50,100,130,150,200]:
+                br = ak.any(abs(llp_dau.id)<=4,axis=1)
+                had_e = ak.sum(ak.mask(llp_dau.e,(abs(llp_dau.id)<=4)),axis=1)
+                cut = (selectionMasks["Acceptance_csc"])&(br)
+                llp_selection = ak.values_astype(( (ak.num(cluster,axis=1)==1)&(br) & (ak.all((cluster.llp_match) & (cluster.size>=region), axis=1))),np.int)
+                #llp_selection = ak.values_astype((ak.num(cluster,axis=1)==1 & (ak.all((cluster.llp_match) & (cluster.size>=region), axis=1))),np.int)
+                #llp_selection = ak.values_astype( ak.any(cluster.llp_match & (cluster.dr_cluster_lep>0.8),axis=1),np.int )
 
-            output['llp_cls_eff_z'].fill(dataset=dataset,selection=llp_selection[cut],z=ak.flatten(abs(llp.z[cut])),weight=weights.weight()[cut])
-            output['llp_cls_eff_r'].fill(dataset=dataset,selection=llp_selection[cut],r=ak.flatten(llp.r[cut]),weight=weights.weight()[cut])
-            output['llp_cls_eff_e'].fill(dataset=dataset,selection=llp_selection[cut],e=ak.flatten(llp.e[cut]),weight=weights.weight()[cut])
+                output['llp_cls_eff_z'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],z=ak.flatten(abs(llp.z[cut])),weight=weights.weight()[cut])
+                output['llp_cls_eff_r'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],r=ak.flatten(llp.r[cut]),weight=weights.weight()[cut])
+                output['llp_cls_eff_e'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],e=ak.flatten(llp.e[cut]),weight=weights.weight()[cut])
+                #output['llp_cls_eff_e'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],e=had_e,weight=weights.weight()[cut])
 
-            cut = selectionMasks["Acceptance_dt_loose"] 
-            llp_selection = ak.values_astype( ak.any(dt_cluster.llp_match,axis=1),np.int )
-            output['llp_cls_dt_eff_z'].fill(dataset=dataset,selection=llp_selection[cut],z=ak.flatten(abs(llp.z[cut])),weight=weights.weight()[cut])
-            output['llp_cls_dt_eff_r'].fill(dataset=dataset,selection=llp_selection[cut],r=ak.flatten(llp.r[cut]),weight=weights.weight()[cut])
-            output['llp_cls_dt_eff_e'].fill(dataset=dataset,selection=llp_selection[cut],e=ak.flatten(llp.e[cut]),weight=weights.weight()[cut])
+                cut = (selectionMasks["Acceptance_dt"])&(br)
+                #llp_selection = ak.values_astype( ak.any(dt_cluster.llp_match,axis=1),np.int )
+                llp_selection = ak.values_astype(((ak.num(dt_cluster,axis=1)==1)&(br) & (ak.all((dt_cluster.llp_match) & (dt_cluster.size>=region), axis=1))),np.int)
+                #llp_selection = ak.values_astype((ak.num(dt_cluster,axis=1)==1 & (ak.all((dt_cluster.llp_match) & (dt_cluster.size>=region), axis=1))),np.int)
+                #llp_selection = ak.values_astype( ak.any(dt_cluster.llp_match & (dt_cluster.dr_cluster_lep>0.8),axis=1),np.int )
+                output['llp_cls_dt_eff_z'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],z=ak.flatten(abs(llp.z[cut])),weight=weights.weight()[cut])
+                output['llp_cls_dt_eff_r'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],r=ak.flatten(llp.r[cut]),weight=weights.weight()[cut])
+                output['llp_cls_dt_eff_e'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],e=ak.flatten(llp.e[cut]),weight=weights.weight()[cut])
+                #output['llp_cls_dt_eff_e'].fill(dataset=dataset,region=str(region),selection=llp_selection[cut],e=had_e,weight=weights.weight()[cut])
 
 
         output["metXYCorr"].fill(dataset=dataset,region="noselection",metXYCorr=events.metXYCorr,weight=weights.weight()) 
@@ -857,7 +919,8 @@ class MyProcessor(processor.ProcessorABC):
 
             ## Fill other regions without cutflows
             cut = buildMask(selectionMasks,cutnames)
-
+            if self._debug:
+                if "MC" in region: print(region," cuts = ", cutnames)
             if cut.ndim==1:
                 ev_cut = cut                  ##This is a per-event cut
             else:

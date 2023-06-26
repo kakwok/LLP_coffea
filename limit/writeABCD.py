@@ -174,21 +174,22 @@ def scale2017(h1,h2):
     return 
 def scale_mu(h1,h2,h3):
     ##2018 = 51.2
-    h1.scale(51.2) ##muon)
+    #h1.scale(51.2) ##muon)
+    h1.scale(59.6) ##muon)
     ##2017 = 37.0 ## muon
-    h2.scale(37.9)
+    h2.scale(41.5)
     ##2016 = 30.9 ## muon
-    h3.scale(30.9)
+    h3.scale(35.9)
     h1.add(h2)      ## this is done in-place
     h1.add(h3)      ## this is done in-place
 
 def scale_ele(h1,h2,h3):
     ##2018 = 51.6
-    h1.scale(51.6)
+    h1.scale(59.6)
     ##2017 = 39.4 ## ele 
-    h2.scale(39.4)
+    h2.scale(41.5)
     ##2016 = 30.9 ## ele
-    h3.scale(30.9)
+    h3.scale(35.9)
     h1.add(h2)      ## this is done in-place
     h1.add(h3)      ## this is done in-place
     return 
@@ -205,7 +206,7 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, 
             cut = {"CSC":(160,dphi_lepcuts[-2],0.7) , "DT":(100,dphi_lepcuts[-10],0.7)}
 
     if muon:
-        lumi = 120
+        lumi = 137
         #signals = loadSignalFromJson("./limitpoints_muon.json",True,cut,debug,lumi) ## this is too slow 
         #bkg     = loadbkg("../HNL_histograms_Feb23_muons_data.pickle",True,cut,debug)
         #signals = loadhist("../HNL_histograms_Feb23_muons_signal.pickle",True,cut,debug)
@@ -218,17 +219,18 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, 
         #signals  = loadhist("../HNL_histograms_Dec6_muons_noLooseID_signals.pickle",True,cut,debug,lumi,
         #                    "../HNL_histograms_Dec6_muons_noLooseID_signals_2017.pickle" )
         #bkg      = loadbkg("../HNL_histograms_Dec14_muons_data.pickle",True,cut,debug,useOOT) ## v14
-        bkg      = loadbkg("../HNL_histograms_Jan9_muons_data.pickle",True,cut,debug,useOOT) ## v19
+        #bkg      = loadbkg("../HNL_histograms_Jan9_muons_data.pickle",True,cut,debug,useOOT) ## v19
+        bkg      = loadbkg("../HNL_histograms_Jun22_muons_data.pickle",True,cut,debug,useOOT) ## v25
         if tauSignals:
-            signals  = loadhist("../HNL_histograms_Jan9_tau_signals_mu_2018.pickle",True,cut,debug,lumi,
-                                "../HNL_histograms_Jan9_tau_signals_mu_2017.pickle" ,
-                                "../HNL_histograms_Jan9_tau_signals_mu_2016.pickle" )
+            signals  = loadhist("../HNL_histograms_May4_tau_signals_mu_2018.pickle",True,cut,debug,lumi,
+                                "../HNL_histograms_May4_tau_signals_mu_2017.pickle" ,
+                                "../HNL_histograms_May4_tau_signals_mu_2016.pickle" )
         else:
-            signals  = loadhist("../HNL_histograms_Jan9_muons_signals_2018.pickle",True,cut,debug,lumi,
-                                "../HNL_histograms_Jan9_muons_signals_2017.pickle" ,
-                                "../HNL_histograms_Jan9_muons_signals_2016.pickle" )
+            signals  = loadhist("../HNL_histograms_May4_muons_signals_2018.pickle",True,cut,debug,lumi,
+                                "../HNL_histograms_May4_muons_signals_2017.pickle" ,
+                                "../HNL_histograms_May4_muons_signals_2016.pickle" )
     else:
-        lumi = 122
+        lumi = 137
         #signals = loadSignalFromJson("./limitpoints_ele.json",False,cut,debug,lumi)
         #bkg     = loadbkg("../HNL_histograms_Feb3_electrons.pickle",False,cut,debug)
         #signals = loadhist("../HNL_histograms_Apr1_ele_signal.pickle",False,cut,debug)
@@ -238,15 +240,16 @@ def writeYields(cut = None,muon=True,outf="yields.json",debug=True,shifts=None, 
         #bkg     = loadbkg("../HNL_histograms_Dec6_ele_noLooseID_data.pickle",False,cut,debug)
         #signals = loadhist("../HNL_histograms_Dec6_ele_noLooseID_signals.pickle",False,cut,debug,lumi)
         #bkg     = loadbkg("../HNL_histograms_Dec14_ele_data.pickle",False,cut,debug,useOOT)
-        bkg     = loadbkg("../HNL_histograms_Jan4_ele_data.pickle",False,cut,debug,useOOT)
+        #bkg     = loadbkg("../HNL_histograms_Jan4_ele_data.pickle",False,cut,debug,useOOT)
+        bkg     = loadbkg("../HNL_histograms_May14_ele_data.pickle",False,cut,debug,useOOT)
         if tauSignals:
-            signals = loadhist("../HNL_histograms_Jan4_tau_signals_ele_2018.pickle",False,cut,debug,lumi,
-                               "../HNL_histograms_Jan4_tau_signals_ele_2017.pickle",
-                               "../HNL_histograms_Jan4_ele_signals_2016.pickle")
+            signals = loadhist("../HNL_histograms_May4_tau_signals_ele_2018.pickle",False,cut,debug,lumi,
+                               "../HNL_histograms_May4_tau_signals_ele_2017.pickle",
+                               "../HNL_histograms_May4_tau_signals_ele_2016.pickle")
         else:
-            signals = loadhist( "../HNL_histograms_Jan4_ele_signals_2018.pickle",False,cut,debug,lumi,
-                                "../HNL_histograms_Jan4_ele_signals_2017.pickle",
-                                "../HNL_histograms_Jan4_ele_signals_2016.pickle")
+            signals = loadhist( "../HNL_histograms_May4_ele_signals_2018.pickle",False,cut,debug,lumi,
+                                "../HNL_histograms_May4_ele_signals_2017.pickle",
+                                "../HNL_histograms_May4_ele_signals_2016.pickle")
 
     #data = {**bkg,**signals}
     ## copy data from loaded hist 
@@ -466,13 +469,15 @@ def loadhist(fin='../HNL_histograms_Feb23_muons_signal.pickle',muon=True,cut=Non
         kfactor=1     ## Muon, CSC InT/OOT 
 
         ## CSC cuts
-        CSC_cls_SF = (1-0.015)*(1-0.033)*(1-0.060)   ## ~0.9
+        #CSC_cls_SF = (1-0.015)*(1-0.033)*(1-0.060)   ## ~0.9 EXO-20-015 numbers
+        CSC_cls_SF = (1-0.021)*(1-0.028)*(1-0.068)   ## 0.88 
         CSC,CSC_unc = predIntimeFromOOT(signal,cut["CSC"][0],cut["CSC"][1],cut["CSC"][2],True,kfactor,lumi)
         CSC     *=  CSC_cls_SF
         CSC_unc *=  CSC_cls_SF
 
         ### DT cuts
-        DT_cls_SF = 0.907*0.932*0.910        ## ~0.76
+        #DT_cls_SF = 0.907*0.932*0.910        ## ~0.76
+        DT_cls_SF = 0.932*0.910        ## new systematics ~ 0.84
         DT,DT_unc = predIntimeFromOOT(signal_dt,cut["DT"][0],cut["DT"][1],cut["DT"][2],True,kfactor,lumi)
         DT *=DT_cls_SF
         DT_unc*=DT_cls_SF
@@ -517,6 +522,7 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
         os.mkdir(outdir)
     norm = 100.0    # 1% BR
     suffix = ""
+    print("[makeAllcards]: Using input json = ",f_yield)
 
     with open(f_yield,'r') as f:
         data = json.load(f)
@@ -553,15 +559,22 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
         #    #"Zmumu_DT_sys_D" :[0 ,0 ,0 ,0.75], # 14.3% high nHit TF 
         #    #"Zmumu_DT_MB2_sys_D" :[0 ,0 ,0 ,0.42],     # 0.42=3/7
         #}
-        bkg_proc_CSC= {    "Zmumu_CSC":[-1,-1,-1,3.5]} ## 4.7% TF, 200 cut}
-        bkg_unc_CSC = {    "Zmumu_CSC":[-1,-1,-1,0.26]    }
+        #bkg_proc_CSC= {    "Zmumu_CSC":[-1,-1,-1,3.5]} ## 4.7% TF, 200 cut}
+        bkg_proc_CSC= {    "Zmumu_CSC":[-1,-1,-1,4.1]} ## 4.8% TF, 200 cut, full lumi}
+        #bkg_unc_CSC = {    "Zmumu_CSC":[-1,-1,-1,0.26]    }
+        bkg_unc_CSC = {    "Zmumu_CSC":[-1,-1,-1,0.30]    } #new systematics
         ## single-bin DT with total Zmumu
         bkg_proc_DT     = {           "Zmumu_DT"        :[-1,-1,-1,7.2]    }
         bkg_unc_DT         = {           "Zmumu_DT"        :[-1,-1,-1,0.42]    }
         ## two-bin DT with Zmumu
-        bkg_proc_DT_MB2 = {           "Zmumu_DT_MB2"        :[-1,-1,-1,7]      }# 36% TF @150         
-        bkg_unc_DT_MB2  = {           "Zmumu_DT_MB2_sys_D"  :[0 ,0 ,0 ,0.42]   }    # 0.42=3/7         
-        bkg_proc_DT_MB34= {           "Zmumu_DT_MB34"       :[-1,-1,-1,0.2,0.2]}
+        #bkg_proc_DT_MB2 = {           "Zmumu_DT_MB2"        :[-1,-1,-1,7]      }# 36% TF @150         
+        bkg_proc_DT_MB2 = {           "Zmumu_DT_MB2"        :[-1,-1,-1,8.2]      }# 36% TF @150,full lumi         
+        #bkg_unc_DT_MB2  = {           "Zmumu_DT_MB2_sys_D"  :[0 ,0 ,0 ,0.42]   }    # 0.42=3/7         
+        #bkg_unc_DT_MB2  = {           "Zmumu_DT_MB2_sys_D"  :[0 ,0 ,0 ,0.95]   }    # 0.95 = 6.9/7.2
+        bkg_unc_DT_MB2  = {           "Zmumu_DT_MB2_sys_D"  :[0 ,0 ,0 ,0.90]   }    # 0.95 = 7.41/8.22
+        #bkg_proc_DT_MB34= {           "Zmumu_DT_MB34"       :[-1,-1,-1,0.2,0.2]}
+        #bkg_proc_DT_MB34= {           "Zmumu_DT_MB34"       :[-1,-1,-1,0.05,0.05]} # constant TF
+        bkg_proc_DT_MB34= {           "Zmumu_DT_MB34"       :[-1,-1,-1,0.06,0.06]} # constant TF, full lumi
         bkg_unc_DT_MB34 = {           "Zmumu_DT_MB34_sys_D" :[0 ,0 ,0 ,1]      }# 100%  unc         
 
     else:
@@ -577,8 +590,8 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
         "Wxsec"           :{       "HNL":[0.038,0.038, 0.038 ,0.038],        },
         "Wpt"             :{       "HNL":[0.016,0.016, 0.016 ,0.016],        },
         "JES"             :{       "HNL":[0.02,0.02, 0.02 ,0.02],        },     ## TODO update
-        "dt_clusterSyst"  :{       "HNL":[0.15,0.15, 0.15 ,0.15],    },
-        "dt_rpcSyst"      :{       "HNL":[0.053,0.053, 0.053 ,0.053],    },
+        "dt_clusterSyst"  :{       "HNL":[0.16,0.16, 0.16 ,0.16],    },
+        #"dt_rpcSyst"      :{       "HNL":[0.053,0.053, 0.053 ,0.053],    },
         "dt_MB1Syst"      :{       "HNL":[0.074,0.074, 0.074 ,0.074],    },
     })
     sig_unc_CSC = OrderedDict({
@@ -587,13 +600,13 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
         "Wxsec"           :{       "HNL":[0.038,0.038, 0.038 ,0.038],        },
         "Wpt"             :{       "HNL":[0.016,0.016, 0.016 ,0.016],        },
         "JES"             :{       "HNL":[0.02,0.02, 0.02 ,0.02],        },     ## TODO update
+        "csc_clusterSyst" :{       "HNL":[0.13 ,0.13 , 0.13  ,0.13 ],        },
         "csc_muonVeto"    :{       "HNL":[0.045 ,0.045, 0.045 ,0.045],        },
-        "csc_jetVeto"     :{       "HNL":[0.00068 ,0.00068 , 0.00068  ,0.00068 ],        },
+        "csc_jetVeto"     :{       "HNL":[0.0006 ,0.0006 , 0.0006  ,0.0006 ],        },
         "csc_rechitVeto"  :{       "HNL":[0.001 ,0.001 , 0.001  ,0.001 ],        },
         "csc_cut_based_id":{       "HNL":[0.051 ,0.051 , 0.051  ,0.051 ],        },
         "csc_time"        :{       "HNL":[0.009 ,0.009 , 0.009  ,0.009 ],        },
         "csc_time_spread" :{       "HNL":[0.028 ,0.028 , 0.028  ,0.028 ],        },
-        "csc_clusterSyst" :{       "HNL":[0.035 ,0.035 , 0.035  ,0.035 ],        },
         "csc_readout"     :{       "HNL":[0.01 ,0.01 , 0.01  ,0.01 ],        },
     })
     if options.muon:
@@ -620,7 +633,8 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
         bkg_rate_DT = {}       # {bkg: [a,b,c,d]}
         bkg_rate_DT.update({"bkg":data['bkg']["DT"]})           # {bkg: [a,b,c,d]}
         bkg_rate_DT.update(bkg_proc_DT)                         # add other bkg 
-        if hasMB2:
+        #if hasMB2:
+        if options.muon:
             bkg_rate_DT_MB2 = {} 
             bkg_rate_DT_MB2.update({"bkg":data['bkg']["DT_MB2"]})
             bkg_rate_DT_MB2.update(bkg_proc_DT_MB2)
@@ -630,12 +644,22 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             
         for name,signal in data.items():
             if "bkg" in name: continue
-            #if not ("2p1" in name or "2p2" in name):  continue
             if suffix:
                 name = name+suffix
-            #norm = 1
-            norm = signal["norm"]
-
+            #norm = signal["norm"]
+            # TODO: FIXME scale norm for large signals
+            #if ("1p0" in name):
+            #    if signal["CSC"][-1]>1e3:
+            #        #norm = 1./np.sum(np.array(signal["CSC"]))
+            #        norm = 1 
+            #        print("using norm = ",norm)
+            #    else:
+            #        norm = 1
+            #        continue
+            #else:
+            #    norm = 1
+            #    continue
+            norm = 1
             sigRate = {"HNL":np.array(signal["CSC"])/norm }
             obs = bkg_rate_CSC['bkg']
             #obs[-1] = bkg_rate_CSC['bkg'][0]*bkg_rate_CSC['bkg'][2]/bkg_rate_CSC['bkg'][1]  ## force D=A*C/B
@@ -644,7 +668,8 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             obs = bkg_rate_DT['bkg']
             #obs[-1] = bkg_rate_DT['bkg'][0]*bkg_rate_DT['bkg'][2]/bkg_rate_DT['bkg'][1]  ## force D=A*C/B
             make_datacard_2sig(outdir,name+"_DT", sigRate, norm, bkg_rate_DT, obs, bkg_unc_DT,  sig_unc_DT)
-            if hasMB2:
+            #if hasMB2:
+            if options.muon:
                 obs = bkg_rate_DT_MB2['bkg']
                 sigRate = {"HNL":np.array(signal["DT_MB2"]) /norm}
                 #obs[-1] = bkg_rate_DT_MB2['bkg'][0]*bkg_rate_DT_MB2['bkg'][2]/bkg_rate_DT_MB2['bkg'][1]  ## force D=A*C/B
@@ -661,20 +686,21 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             def RunLimit(outdir,name,tag1,tag2=None,tag3=None,test=False):
                 if tag2 is None:
                     #cmd = "combine -M AsymptoticLimits {odir}{name}_{tag1}.txt -n _{name}_{tag1} --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,tag1=tag1,odir=outdir,norm=1)
-                    cmd = "combine -M AsymptoticLimits {odir}{name}_{tag1}.txt -n _{name}_{tag1} --setParameters norm={norm} --freezeParameter norm ".format(name=name,tag1=tag1,odir=outdir,norm=1)
+                    cmd = "combine -M AsymptoticLimits {odir}{name}_{tag1}.txt -n _{name}_{tag1} --setParameters norm={norm} --freezeParameter norm ".format(name=name,tag1=tag1,odir=outdir,norm=norm)
                     Run(cmd,test)
                     Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_"+tag1,outdir),test)
                 else:
                     cmd = "python combination.py {tag1}={odir}{name}_{tag1}.txt {tag2}={odir}{name}_{tag2}.txt {odir}{name}_{tag3}.txt".format(name=name,tag1=tag1,tag2=tag2,tag3=tag3,odir=outdir)
                     Run(cmd,test)
                     #cmd = "combine -M AsymptoticLimits {odir}{name}_{tag3}.txt -n _{name}_{tag3} --setParameters norm={norm} --freezeParameter norm -t -1 --toysFreq".format(name=name,tag3=tag3,odir=outdir,norm=1)
-                    cmd = "combine -M AsymptoticLimits {odir}{name}_{tag3}.txt -n _{name}_{tag3} --setParameters norm={norm} --freezeParameter norm ".format(name=name,tag3=tag3,odir=outdir,norm=1)
+                    cmd = "combine -M AsymptoticLimits {odir}{name}_{tag3}.txt -n _{name}_{tag3} --setParameters norm={norm} --freezeParameter norm ".format(name=name,tag3=tag3,odir=outdir,norm=norm)
                     Run(cmd,test)
                     Run("mv higgsCombine_%s.AsymptoticLimits.mH120.root %s"%(name+"_"+tag3,outdir),test)
                 return
                     
             RunLimit(outdir,name,"CSC",None,None,test)
-            if hasMB2:
+            #if hasMB2:
+            if options.muon:
                 #RunLimit(outdir,name,"DT_MB2",None,None,test)
                 #RunLimit(outdir,name,"DT_MB34",None,None,test)
                 RunLimit(outdir,name,"DT_MB2","DT_MB34","DTcomb",test)
@@ -683,7 +709,8 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
                 RunLimit(outdir,name,"DT",None,None,test)
 
             #Combination
-            if hasMB2:
+            #if hasMB2:
+            if options.muon:
                 RunLimit(outdir,name,"CSC","DTcomb","comb",test)       # CSC+MB2+MB34
                 #RunLimit(outdir,name,"CSC","DT_MB34","combNoMB2",test) # CSC+MB34
                 #RunLimit(outdir,name,"CSC","DT","combSingleDTBin",test)            # CSC+DT
@@ -763,6 +790,7 @@ def shiftYields(f_yield,shifts):
                     ct_src = name.split("_")[-1]
                     ct_tar = "pl"+str(int(ct_new))
                     shift["names"].append(name.replace(m_src,m_tar).replace(ct_src,ct_tar))
+                    print("shifting m_src =%s to m_target=%s"%(m,shift['m_target']))
     for shift in shifts:
         if len(shift['names'])>0:
             for i,name in enumerate(shift['names']):
@@ -868,7 +896,14 @@ if __name__ == "__main__":
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #outdir = "./combine/HNL_datacards/ele_v13/"   ###  v13, 150DT cut (Jan4 pickles) ABCD, CSC,DT cls SF 
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
-        outdir = "./combine/HNL_datacards/ele_v14/"   ###  v14, 150DT cut (Jan4 pickles) ABCD, unblind 
+        #outdir = "./combine/HNL_datacards/ele_v14/"   ###  v14, 150DT cut (Jan4 pickles) ABCD, unblind 
+        #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
+        #outdir = "./combine/HNL_datacards/ele_v15/"   ###  v15, 150DT cut (Jan4 data, Apr27 signal pickles) ABCD, unblind 
+        #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
+        #outdir = "./combine/HNL_datacards/ele_v16/"   ###  v16, 150DT cut (Jan4 data, Apr27 signal pickles) ABCD, unblind, new systematics
+        #outdir = "./combine/HNL_datacards/ele_v17/"    ###  v17, 150DT cut (Jan4 data, May4 signal pickles) ABCD, unblind, 2p5,3p0 signals
+        #outdir = "./combine/HNL_datacards/ele_v18/"    ###  v18, 150DT cut (Jan4 data, May4 signal pickles)  2p5,3p0 signals, new DT systematics
+        #outdir = "./combine/HNL_datacards/ele_v19/"    ###  v19, 150DT cut (May14 data, May4 signal pickles)  2p5,3p0 signals, new DT systematics
         cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #########################################
         #outdir = "./combine/HNL_datacards/tau_v2/ele/"   ### tau v2: 150 DT, real ABC
@@ -877,38 +912,59 @@ if __name__ == "__main__":
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #outdir = "./combine/HNL_datacards/tau_v4/ele/"   ### tau v4 (as in v3): unblinded
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
+        #outdir_tau = "./combine/HNL_datacards/tau_v5/ele/"   ### tau v4 (as in v3): unblinded
+        #outdir_tau = "./combine/HNL_datacards/tau_v6/ele/"   ### tau v4 (as in v3): unblinded
+        #outdir_tau = "./combine/HNL_datacards/tau_v7/ele/"   ### tau v4 (as in v3): unblinded, new DT sys
+        outdir_tau = "./combine/HNL_datacards/tau_v8/ele/"   ### tau v8 (as in ele v19)
+        cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         isMuon=False
 
-        f_yield = outdir+"yields.json"
-        print("        yields = ", f_yield)
         if options.tauSignals:
             # shifts for tau HNLs
             shifts = [
-                #{"m_src":2.0,"m_target":2.5,"isTau":True},
+                {"m_src":2.0,"m_target":2.5,"isTau":True},
+                {"m_src":2.0,"m_target":2.4,"isTau":True},
+                {"m_src":2.0,"m_target":2.3,"isTau":True},
                 {"m_src":2.0,"m_target":2.2,"isTau":True},
                 {"m_src":2.0,"m_target":2.1,"isTau":True},
-                {"m_src":2.0,"m_target":1.8,"isTau":True},
-                {"m_src":2.0,"m_target":1.7,"isTau":True},
-                {"m_src":2.0,"m_target":1.6,"isTau":True},
-                {"m_src":2.0,"m_target":1.5,"isTau":True},
+                {"m_src":1.5,"m_target":1.8,"isTau":True},
+                {"m_src":1.5,"m_target":1.7,"isTau":True},
+                {"m_src":1.5,"m_target":1.6,"isTau":True},
+                #{"m_src":2.0,"m_target":1.5,"isTau":True},
                 {"m_src":1.0,"m_target":1.3,"isTau":True},
             ]
         else:
             shifts = [
-                {"m_src":4.0,"m_target":2.5,"isTau":False},
-                {"m_src":4.0,"m_target":2.8,"isTau":False},
-                {"m_src":4.0,"m_target":3.0,"isTau":False},
-                {"m_src":4.0,"m_target":3.1,"isTau":False},
-                {"m_src":4.0,"m_target":3.2,"isTau":False},
-                {"m_src":4.0,"m_target":3.3,"isTau":False},
-                {"m_src":4.0,"m_target":3.4,"isTau":False},
-                {"m_src":4.0,"m_target":3.5,"isTau":False},
+                #{"m_src":4.0,"m_target":2.5,"isTau":False},
+                {"m_src":2.5,"m_target":2.6,"isTau":False},
+                {"m_src":2.5,"m_target":2.7,"isTau":False},
+                {"m_src":2.5,"m_target":2.8,"isTau":False},
+                {"m_src":2.5,"m_target":2.9,"isTau":False},
+                #{"m_src":4.0,"m_target":3.0,"isTau":False},
+                {"m_src":3.0,"m_target":3.1,"isTau":False},
+                {"m_src":3.0,"m_target":3.2,"isTau":False},
+                {"m_src":3.0,"m_target":3.3,"isTau":False},
+                {"m_src":3.0,"m_target":3.4,"isTau":False},
+                {"m_src":3.0,"m_target":3.5,"isTau":False},
+                {"m_src":4.0,"m_target":3.6,"isTau":False},
+                {"m_src":4.0,"m_target":3.7,"isTau":False},
+                {"m_src":4.0,"m_target":3.8,"isTau":False},
+                {"m_src":4.0,"m_target":3.9,"isTau":False},
             ]                                       
         if not options.muon:
+            if options.tauSignals:
+                f_yield = outdir_tau+"yields.json"
+                outdir  = outdir_tau
+            else:
+                f_yield = outdir+"yields.json"
+                outdir  = outdir
+        
+            print("        yields = ", f_yield)
             if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals,options.unblind,options.useOOT) 
             else:
                 makeAllcards(f_yield,outdir,"",options.dryRun)
                 makeAllcards(f_yield.replace(".json","_dirac.json"),outdir,"",options.dryRun)
+
         #########################################
         #########################################
         #outdir = "./combine/HNL_datacards/muon_v3/"
@@ -953,7 +1009,14 @@ if __name__ == "__main__":
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #outdir = "./combine/HNL_datacards/muon_v19/"   ### v19 , as in v17, (Jan9 signal), ABCD, split MB2,MB34, apply CSC,DT_cls_SF 
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
-        outdir = "./combine/HNL_datacards/muon_v20/"   ### v20 , as in v19, (Jan9 signal), unblind 
+        #outdir = "./combine/HNL_datacards/muon_v20/"   ### v20 , as in v19, (Jan9 signal), unblind 
+        #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
+        #outdir = "./combine/HNL_datacards/muon_v21/"   ### v20 , as in v20, (Jan9 data,Apr27 signal), unblind 
+        #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
+        #outdir = "./combine/HNL_datacards/muon_v22/"   ### v22 , as in v20, (Jan9 data,Apr27 signal), unblind, new systematics
+        #outdir = "./combine/HNL_datacards/muon_v23/"   ### v23 , as in v20, (Jan9 data,May4 signal), unblind, new 2p5,3p0 signals
+        #outdir = "./combine/HNL_datacards/muon_v24/"   ### v24 , as in v20, (Jan9 data,May4 signal), new 2p5,3p0 signals, new DT systematics
+        outdir = "./combine/HNL_datacards/muon_v25/"   ### v25 , as in v24, (Jun22 data,May4 signal)
         cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #########################################
         #outdir = "./combine/HNL_datacards/tau_v1/mu/"   ### v1 
@@ -964,12 +1027,22 @@ if __name__ == "__main__":
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #outdir = "./combine/HNL_datacards/tau_v4/mu/"    ### v4 (as in v20), unblind 
         #cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
+        #outdir_tau = "./combine/HNL_datacards/tau_v5/mu/"    ### v4 (as in v22), unblind 
+        #outdir_tau = "./combine/HNL_datacards/tau_v6/mu/"    ### v4 (as in v22), unblind 
+        #outdir_tau = "./combine/HNL_datacards/tau_v7/mu/"    ### v4 (as in v22), unblind , new DT systematics
+        outdir_tau = "./combine/HNL_datacards/tau_v8/mu/"    ### v4 (as in v22), unblind , new DT systematics
+        cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         isMuon=True
 
-        f_yield = outdir+"yields.json"
         print("Working on muon Channel: ")
-        print("        yields = ", f_yield)
         if options.muon:
+            if options.tauSignals:
+                f_yield = outdir_tau+"yields.json"
+                outdir  = outdir_tau
+            else:
+                f_yield = outdir+"yields.json"
+                outdir  = outdir
+            print("        yields = ", f_yield)
             if options.writeYields: writeYields(cut,isMuon,f_yield,True,shifts,options.tauSignals,options.unblind,options.useOOT) 
             else:
                 makeAllcards(f_yield,outdir,"",options.dryRun)

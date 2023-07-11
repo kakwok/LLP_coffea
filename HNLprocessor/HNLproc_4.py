@@ -163,6 +163,7 @@ class MyProcessor(processor.ProcessorABC):
             #'EMfrac':events.gLLP_EMFracE,
             'e':events.gLLP_e,
             'eta':events.gLLP_eta,
+            'phi':events.gLLP_phi,
             'z':events.gLLP_decay_vertex_z ,
             'r':events.gLLP_decay_vertex_r,
             'ctau':events.gLLP_ctau,
@@ -631,8 +632,8 @@ class MyProcessor(processor.ProcessorABC):
             preselections_loose = ["loose_mu"]       
 
         CSC_sel_ABCD = ["dr_lep","ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto","RE12_veto","IntimeCut","timeSpreadCut","ClusterID"]
-        #DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","dt_noise"]
-        DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_etaveto","dt_time","dt_deadzones","dt_noise"]
+        DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones","dt_noise"]
+        #DT_sel_ABCD  = ["dr_lep","dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_etaveto","dt_time","dt_deadzones","dt_noise"]
 
         regions = {
             "PreSel"       :preselections,            
@@ -695,7 +696,8 @@ class MyProcessor(processor.ProcessorABC):
             if self.isElectronChannel: channel ="ele_"
             else: channel ="muon_"
             filename = dataset + "_skim_"+channel + str(time.time()) + ".root"
-            destination = "root://cmseos.fnal.gov//store/user/kkwok/llp/HNL/skim/skim_Mar13/"
+            #destination = "root://cmseos.fnal.gov//store/user/kkwok/llp/HNL/skim/skim_Mar13/"
+            destination = "root://cmseos.fnal.gov//store/user/kkwok/llp/HNL/skim/skim_Jun22/"
 
             cls_inTime_CR = (p & ak.any(
                                 (selectionMasks['cls_ABCD'] |selectionMasks['cls_OOT']) &
@@ -703,12 +705,12 @@ class MyProcessor(processor.ProcessorABC):
                                (abs(cluster.dphi_cluster_MET)>=0.7),axis=1)
                             )
             dt_cls_inTime_D = (p & ak.any((selectionMasks['dt_cls_ABCD']) &
-                               (dt_cluster.size>150)  &
-                               (abs(dt_cluster.dphi_cluster_lep)>2.8),axis=1)
+                               (dt_cluster.size>=150)  &
+                               (abs(dt_cluster.dphi_cluster_lep)>=2.8),axis=1)
                             )
             csc_cls_inTime_D = (p & ak.any((selectionMasks['cls_ABCD']) &
-                               (cluster.size>200)  &
-                               (abs(cluster.dphi_cluster_lep)>2.8),axis=1)
+                               (cluster.size>=200)  &
+                               (abs(cluster.dphi_cluster_lep)>=2.8),axis=1)
                             )
 
             cut = (dt_cls_inTime_D)|(csc_cls_inTime_D)
@@ -801,9 +803,13 @@ class MyProcessor(processor.ProcessorABC):
                         
             cut      = buildMask(selectionMasks,regions["ABCD"])
             cut_dt   = buildMask(selectionMasks,regions["ABCD_dt"])
+            cut_dt_mb2   = buildMask(selectionMasks,regions["ABCD_dt_MB2"])
+            cut_dt_mb34   = buildMask(selectionMasks,regions["ABCD_dt_MB34"])
             ## Nominal 
             fillsys(output['dphi_cluster_syst']   ,"nominal",    cluster,cut   ,weights)
-            fillsys(output['dphi_cluster_dt_syst'],"nominal", dt_cluster,cut_dt,weights)
+            fillsys(output['dphi_cluster_dt_syst'],"nominal"    , dt_cluster,cut_dt,weights)
+            fillsys(output['dphi_cluster_dt_mb2_syst'],"nominal", dt_cluster,cut_dt_mb2,weights)
+            fillsys(output['dphi_cluster_dt_mb34_syst'],"nominal",dt_cluster,cut_dt_mb34,weights)
             ## Exclude Wpt to see the effect of WpT reweighting
             fillsys(output['dphi_cluster_syst']   ,"Wpt",    cluster,cut   ,weights,isPartial=True)
             fillsys(output['dphi_cluster_dt_syst'],"Wpt", dt_cluster,cut_dt,weights,isPartial=True)
@@ -813,6 +819,14 @@ class MyProcessor(processor.ProcessorABC):
                     sys_name = sys+suffix
                     fillsys(output['dphi_cluster_syst']   ,sys_name,    cluster,cut   ,weights)
                     fillsys(output['dphi_cluster_dt_syst'],sys_name, dt_cluster,cut_dt,weights)
+            ## llp eta:
+            cut = ak.any(cut,axis=1)
+            cut_dt = ak.any(cut_dt,axis=1)
+
+            output['gLLP_eta_csc'].fill(dataset=dataset,gllp_eta = abs(ak.firsts(llp[cut].eta)), weight=weights.weight()[cut])
+            output['gLLP_eta_dt'].fill(dataset=dataset ,gllp_eta = abs(ak.firsts(llp[cut_dt].eta)), weight=weights.weight()[cut_dt])
+            output['gLLP_phi'].fill(dataset=dataset,region= "ABCD"   , gLLP_phi = abs(ak.firsts(llp[cut].phi)), weight=weights.weight()[cut])
+            output['gLLP_phi'].fill(dataset=dataset,region= "ABCD_dt",gLLP_phi = abs(ak.firsts(llp[cut_dt].phi)), weight=weights.weight()[cut_dt])
             return output
 
             

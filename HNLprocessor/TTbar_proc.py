@@ -37,13 +37,15 @@ class ttbarProcessor(MyProcessor):
         self._accumulator = processor.dict_accumulator( histograms )
 
 
-    def buildbjets(self,events,ele,muon):
+    def buildbjets(self,events,ele,muon,cisvVal=0.8484):
         jets = ak.zip(
                 {k.replace("jet",""):getattr(events,k) for k in events.fields if k.startswith("jet")}
                 ,with_name="PtEtaPhiMLorentzVector", 
                 behavior=vector.behavior
                )
-        bjets = jets[jets.CISV>0.8484] ## medium bjets
+        bjets = jets[jets.CISV>cisvVal] ## medium bjets
+        #bjets = jets[jets.CISV>0.8484] ## medium bjets
+        #bjets = jets[jets.CISV>0.7] ## medium bjets
         bjets = ak.with_field(bjets,bjets.Phi,"phi")
         bjets = ak.with_field(bjets,bjets.Eta,"eta")
 
@@ -58,6 +60,41 @@ class ttbarProcessor(MyProcessor):
         bjets= ak.with_field(bjets,dr_mu,"dr_mu")
 
         return bjets
+
+    def buildGoodLeptons(self,events):
+        lep=ak.zip({
+            'pt':events.lepPt ,
+            'eta':events.lepEta,
+            'phi':events.lepPhi,
+            'energy':events.lepE,
+            'pdgid':events.lepPdgId,
+            'passId':events.lepPassId,
+            'passLooseId':events.lepLoosePassId,
+            'passMediumId':events.lepMediumPassId,
+        },with_name='PtEtaPhiELorentzVector',
+        behavior=vector.behavior    
+        )  
+            
+        ele   = lep[abs(lep.pdgid)==11]
+        muons = lep[abs(lep.pdgid)==13]
+        if self._year=="2016":
+            good_ele = ele[(ele.pt>30) & (abs(ele.eta)<2.5) & (ele.passLooseId)]
+        elif self._year =="2017":
+            good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.5) & (ele.passLooseId)]
+        elif self._year =="2018":
+            good_ele = ele[(ele.pt>30) & (abs(ele.eta)<2.5) & (ele.passLooseId)]
+            #good_ele = ele[(ele.pt>35) & (abs(ele.eta)<2.5) & (ele.passId)]
+            
+        if self._year=="2017":
+            good_mu  = muons[(muons.pt>28)&(abs(muons.eta)<2.4) & (muons.passId)]   ## use pT>28 GeV for 2017
+        else:
+            good_mu  = muons[(muons.pt>25)&(abs(muons.eta)<2.4) & (muons.passId)] 
+ 
+        if self.isElectronChannel:  good_lep = good_ele
+        elif self.isMuonChannel: good_lep = good_mu
+        return good_lep,ele, muons
+
+
         
     def buildSelectionMasks(self,events,good_lep,cluster,clusterMasks,dt_cluster,dt_clusterMasks,bjets):
         selectionMasks =   {}
@@ -83,7 +120,8 @@ class ttbarProcessor(MyProcessor):
 
         dt_clusterMasks["neg_dt_MB1veto"] = ~dt_clusterMasks["dt_MB1veto"] #make veto dt mask
         DT_sel_OOT  = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_OOT","dt_deadzones"]
-        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_noise","dt_deadzones"]
+        #DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
         DT_sel_negMB1 = ["neg_dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_deadzones","dt_noise","dt_time"]
 
         selectionMasks['dt_cls_OOT']  = buildMask(dt_clusterMasks,DT_sel_OOT)         
@@ -138,12 +176,12 @@ class ttbarProcessor(MyProcessor):
         dt_clusterMasks = self.selectDTcluster(dt_cluster,events)
 
         #dictionary of cutName:masks
-        selectionMasks =   self.buildSelectionMasks(events,cluster,clusterMasks,dt_cluster,dt_clusterMasks,bjets)
+        selectionMasks =   self.buildSelectionMasks(events,good_lep,cluster,clusterMasks,dt_cluster,dt_clusterMasks,bjets)
 
 
         if self.isElectronChannel:
             #preselections = ['trigger_ele','MET',"METfilters",'good_lepton',"n_bjets","bjet_cls_dr","bjet_dt_cls_dr"]
-            preselections = ['trigger_ele','MET',"METfilters",'good_lepton',"n_bjets","bjet_cls_dr","bjet_dt_cls_dr"]
+            preselections = ['trigger_ele','MET',"METfilters",'good_lepton',"n_bjets","bjet_cls_dr_p8","bjet_dt_cls_dr_p8"]
         else:
             preselections = ['trigger_mu','MET',"METfilters",'good_lepton',"n_bjets","bjet_cls_dr","bjet_dt_cls_dr"]
 
@@ -152,7 +190,7 @@ class ttbarProcessor(MyProcessor):
             "ABCD"         :preselections+["cls_ABCD"],            
             "ABCD_dt"      :preselections+["dt_cls_ABCD"],            
             "ABCD_negME11"      :preselections+["cls_negME11"],            
-            "ABCD_negMB1"       :preselections+["dt_cls_negMB1"],            
+            "ABCD_negMB1_dt"       :preselections+["dt_cls_negMB1"],            
         }
 
         weights = Weights(len(events))
@@ -212,7 +250,6 @@ class ttbarProcessor(MyProcessor):
             ## Fill other regions without cutflows
             if self._debug: 
                 print(region,cutnames)
-                print(selectionMasks)
             cut = buildMask(selectionMasks,cutnames)
 
             if cut.ndim==1:
@@ -296,6 +333,8 @@ class ttbarProcessor(MyProcessor):
         allPreSel= buildMask(selectionMasks,acc_csc_preselections) 
         allPreSel_dt= buildMask(selectionMasks,acc_dt_preselections) 
         
+        CSC_sel_ABCD = ["ME11_12_veto","jetVeto","muonVeto","MB1seg_veto","RB1_veto", "IntimeCut","timeSpreadCut","ClusterID"]
+        DT_sel_ABCD = ["dt_MB1veto","dt_jetVeto","dt_muonVeto","dt_RPC","dt_MB1adj","dt_time","dt_deadzones"]
         for i,sel in enumerate(CSC_sel_ABCD):
             allcuts= ak.any( (buildMask(clusterMasks,CSC_sel_ABCD[0:i+1]) & allPreSel), axis=1)     ## select all cuts up to this cut
             output['cutflow'].fill(dataset=dataset,region="csc_cutflow",cutflow=sel,weight=weights.weight()[allcuts])

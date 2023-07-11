@@ -39,9 +39,7 @@ def add_Wpt_kfactor(weights, gWPt, dataset):
                             , compiled["wptUp"](gWPt)
                             , compiled["wptDown"](gWPt))
     elif dataset=="WJetsToLNu" or  "WJets" in dataset:
-        weights.add("Wpt"    , compiled["wpt_WJ"](gWPt)
-                             ,compiled["wpt_WJUp"](gWPt)
-                             ,compiled["wpt_WJDown"](gWPt))
+        weights.add("Wpt"    , compiled["wpt_WJ"](gWPt))
     return
 
 def add_ctau_weight(weights,llp_ctau, ctau_old, ctau_new):

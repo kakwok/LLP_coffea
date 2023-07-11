@@ -76,7 +76,8 @@ def plotEff(h_list,ax,axis='e'):
             ax=ax,
             num  =h_pass.project(axis),
             denom=h.project(axis),
-            error_opts={'marker': '.'},
+            error_opts={'marker': '+'},
+            xerr=True,
             unc='num',
             label=h.identifiers('dataset')[0].label,
             clear=False
@@ -152,7 +153,8 @@ def drawDTz(ax):
     return ax
 
 def drawDTr(ax,text_loc=0.7):    
-    ax.set_xlim(200,800)
+    #ax.set_xlim(200,800)
+    ax.set_xlim(380,800)
     (xmin,xmax) = ax.get_xlim()
 
     y_max = ax.get_ylim()[1]
@@ -202,14 +204,16 @@ def plotEffrz(hr,hz,datasets,outf,drawCSC="CSC",ylim=None,close=True):
         plt.close(fig)
     return fig,axs
 
-def plotEff_e(he,datasets,outf,close=True):
+def plotEff_e(he,datasets,outf,rebin=None,close=True):
     
     figsize=(12,8)
     fig, axs = plt.subplots(1,1,figsize=figsize)
     
     relabel(he)
-    
+    if rebin is not None:
+        he = he.rebin("e",rebin)
     plotEff([he[d] for d in datasets],axs,"e")
+    axs.set_ylim(0,0.6)
     hep.cms.label(ax=axs)
     fig.savefig(outf)
     if close:
@@ -261,20 +265,24 @@ if __name__ == "__main__":
     for channel in channels:
         
         if channel =="muon":
-            #out = loadPickle("HNL_histograms_Mar15_muons_signal.pickle")
-            out = loadPickle("HNL_histograms_Nov13_muons_signal.pickle")
+            out = loadPickle("HNL_histograms_Mar13_muons_fullsignals.pickle")
+            #out = loadPickle("/uscms/home/kkwok/eos/HNL/pickle/HNL_histograms_Nov22_muons_signal.pickle")
             signals = [
-             'HNL_muonType_mHNL1p0_pl10000_rwctau20000',
-             'HNL_muonType_mHNL2p0_pl10000_rwctau5000',
+             'HNL_muonType_mHNL1p0_pl1000',
+             'HNL_muonType_mHNL2p0_pl1000',
+             #'HNL_muonType_mHNL2p0_pl1000_rwctau500',
              'HNL_muonType_mHNL4p0_pl1000',
              #'HNL_muonType_mHNL4p0_pl100_rwctau80',
             ]
         else:
-            #out = loadPickle("HNL_histograms_Mar15_ele_signal.pickle")
-            out = loadPickle("HNL_histograms_Nov13_ele_signal.pickle")
-            signals = ['HNL_electronType_mHNL1p0_pl10000',
-             'HNL_electronType_mHNL2p0_pl10000_rwctau5000',
+            out = loadPickle("HNL_histograms_Mar13_ele_fullsignals.pickle")
+            #out = loadPickle("/uscms/home/kkwok/eos/HNL/pickle/HNL_histograms_Nov22_ele_signal.pickle")
+            signals = [
+             #'HNL_electronType_mHNL1p0_pl1000',
+             'HNL_electronType_mHNL2p0_pl1000',
+             #'HNL_electronType_mHNL2p0_pl1000_rwctau500',
              'HNL_electronType_mHNL4p0_pl1000',
+             'HNL_electronType_mHNL3p0_pl1000',
              #'HNL_electronType_mHNL4p0_pl100_rwctau80'
         ]
     
@@ -286,7 +294,7 @@ if __name__ == "__main__":
         for region in regions: 
             #plot(out['gLLP_e'].integrate("region",region), signals, outdir+"gLLP_e_%s_%s.pdf"%(channel,region))
             #plot(out['gLLP_pt'].integrate("region",region), signals, outdir+"gLLP_pt_%s_%s.pdf"%(channel,region))
-            #plot(out['gLLP_eta'].integrate("region",region), signals, outdir+"gLLP_eta_%s_%s.pdf"%(channel,region),True,None,{"min":None,"max":1.2})
+            plot(out['gLLP_eta'].integrate("region",region), signals, outdir+"gLLP_eta_%s_%s.pdf"%(channel,region),True,None,{"min":None,"max":1.2})
             #plot(out['glepdPhi'].integrate("region",region), signals, outdir+"glepdPhi_%s_%s.pdf"%(channel,region))
             pass
 
@@ -305,14 +313,16 @@ if __name__ == "__main__":
 
         if channel == "muon":
             #plot(out['muPt'], signals_bkg, outdir+"muPt_%s.pdf"%(channel))
-            fig,ax = plot(out['muEta'], signals_bkg, outdir+"muEta_%s.pdf"%(channel))
-            ax.set_ylim(0,0.7)
-            fig.savefig(outdir+"muEta_muon.pdf")
+            #fig,ax = plot(out['muEta'], signals_bkg, outdir+"muEta_%s.pdf"%(channel))
+            #ax.set_ylim(0,0.7)
+            #fig.savefig(outdir+"muEta_muon.pdf")
+            pass
         else:
             #plot(out['elePt'], signals_bkg, outdir+"elePt_%s.pdf"%(channel))
-            fig,ax = plot(out['eleEta'], signals_bkg, outdir+"eleEta_%s.pdf"%(channel))
-            ax.set_ylim(0,0.7)
-            fig.savefig(outdir+"eleEta_ele.pdf")
+            #fig,ax = plot(out['eleEta'], signals_bkg, outdir+"eleEta_%s.pdf"%(channel))
+            #ax.set_ylim(0,0.7)
+            #fig.savefig(outdir+"eleEta_ele.pdf")
+            pass
             
         # cluster eff
         for signal in signals:
@@ -320,29 +330,37 @@ if __name__ == "__main__":
             hr = out['llp_cls_eff_r']
             hz = out['llp_cls_eff_z']
             fname = outdir+"cls_eff_CSCrz_%s_%s.pdf"%(channel,rename(signal))
-            plotEffrz(hr,hz,[signal],fname,"CSC")
+            #plotEffrz(hr,hz,[signal],fname,"CSC")
             ## CSC
             hr = out['llp_cls_dt_eff_r']
             hz = out['llp_cls_dt_eff_z']
             fname = outdir+"cls_eff_DTrz_%s_%s.pdf"%(channel,rename(signal))
-            plotEffrz(hr,hz,[signal],fname,"DT")
+            #plotEffrz(hr,hz,[signal],fname,"DT")
         
-        #plotEff_e(out["llp_cls_eff_e"],signals, outdir+"cls_eff_E_csc_%s.pdf"%channel)
-        #plotEff_e(out["llp_cls_dt_eff_e"],signals, outdir+"cls_eff_E_dt_%s.pdf"%channel)
+        fname = outdir+"cls_eff_CSCrz_%s_all.pdf"%channel
+        #plotEffrz(out['llp_cls_eff_r'],out['llp_cls_eff_z'],signals,fname,"CSC")
+        fname = outdir+"cls_eff_DTrz_%s_all.pdf"%channel
+        #plotEffrz(out['llp_cls_dt_eff_r'],out['llp_cls_dt_eff_z'],signals,fname,"DT")
+        
+        e_bins = hist.Bin("e","LLP E[GeV]",np.array([ 0. ,  12.5,  25.  , 37.5 , 50.  , 62.5,  75. ,  87.5 ,100. , 112.5 ,125. , 137.5, 150. ,  200.  ,250. ]))
+        plotEff_e(out["llp_cls_eff_e"],signals, outdir+"cls_eff_E_csc_%s.pdf"%channel,e_bins)
+        e_bins = hist.Bin("e","LLP E[GeV]",np.array([ 0. , 12.5,  25.  , 37.5 , 50.  , 62.5,  75. , 100. ,   250. ]))
+        plotEff_e(out["llp_cls_dt_eff_e"],signals, outdir+"cls_eff_E_dt_%s.pdf"%channel,e_bins)
 
             
         ## ABCD plots
         region = "ABCD"
+        region = "JetMuStaVeto"
         h = out['dphi_cluster_csc'].integrate("region",region)
         #plot(h.project("ClusterSize","dataset").rebin("ClusterSize",5), signals, outdir+"clsSize_csc_%s_%s.pdf"%(channel,region),True,{"min":1e-6,"max":10})
         #plot(h.project("dphi_lep","dataset").rebin("dphi_lep",2)   , signals, outdir+"dphi_lep_csc_%s_%s.pdf"%(channel,region))
-        #plot(h.project("dphi_MET","dataset").rebin("dphi_MET",2)   , signals, outdir+"dphi_MET_csc_%s_%s.pdf"%(channel,region))
+        #plot(h.project("dphi_MET","dataset").rebin("dphi_MET",2)   , signals_bkg, outdir+"dphi_MET_csc_%s_%s.pdf"%(channel,region))
 
         region = "ABCD_dt"
+        region = "JetMuStaVeto_dt"
         h = out['dphi_cluster_dt'].integrate("region",region)
         #plot(h.project("ClusterSize","dataset").rebin("ClusterSize",5), signals, outdir+"clsSize_dt_%s_%s.pdf"%(channel,region),True,{"min":1e-6,"max":10})
         #plot(h.project("dphi_lep","dataset").rebin("dphi_lep",2)      , signals, outdir+"dphi_lep_dt_%s_%s.pdf"%(channel,region))
-        #plot(h.project("dphi_MET","dataset").rebin("dphi_MET",2)      , signals, outdir+"dphi_MET_dt_%s_%s.pdf"%(channel,region))
-
-
+        region = "JetMuStaVeto_dt"
+        #plot(h.project("dphi_MET","dataset").rebin("dphi_MET",2)      , signals_bkg, outdir+"dphi_MET_dt_%s_%s.pdf"%(channel,region))
 

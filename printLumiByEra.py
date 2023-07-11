@@ -23,6 +23,8 @@ if __name__ == '__main__':
     #from : https://twiki.cern.ch/twiki/bin/view/CMS/PdmV2018Analysis#DATA
     
     Eras2018 = [
+        {"Era":"2018A-beforeHLT","FromRun":315252,"ToRun":316361},
+        {"Era":"2018A-afterHLT" ,"FromRun":316361,"ToRun":316995},
         {"Era":"2018A","FromRun":315252,"ToRun":316995},
         {"Era":"2018B","FromRun":317080,"ToRun":319310},
         {"Era":"2018C","FromRun":319337,"ToRun":320065},
@@ -37,9 +39,11 @@ if __name__ == '__main__':
         {"Era":"2017F","FromRun":305040,"ToRun":306462},
      ]
     Eras2016 = [
-        {"Era":"2016A","FromRun":271036,"ToRun":271658},
+        #{"Era":"2016A","FromRun":271036,"ToRun":271658},
         {"Era":"2016B","FromRun":272007,"ToRun":275376},
         {"Era":"2016C","FromRun":275657,"ToRun":276283},
+        {"Era":"2016B-noise","FromRun":275750,"ToRun":275950},
+        {"Era":"2016C-noise","FromRun":274150,"ToRun":274200},
         {"Era":"2016D","FromRun":276315,"ToRun":276811},
         {"Era":"2016E","FromRun":276831,"ToRun":277420},
         {"Era":"2016F","FromRun":277772,"ToRun":278808},

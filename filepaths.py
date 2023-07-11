@@ -71,7 +71,24 @@ signals_muon = {
 
 }
 data_muon = {
-     'Muon_2018D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim/SingleMuon_2018D/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2018A': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2018A_part*/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2018B': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2018B/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2018C': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2018C/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2018D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2018D_part*/HeavyNeutralLepton_Tree_*.root"),
+
+     'Muon_2017B': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2017B/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2017C': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2017C/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2017D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2017D/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2017E': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2017E/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2017F': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2017F/HeavyNeutralLepton_Tree_*.root"),
+
+     'Muon_2016B': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016B-v*/HeavyNeutralLepton_Tree.root"),
+     'Muon_2016C': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016C/HeavyNeutralLepton_Tree.root"),
+     'Muon_2016D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016D/HeavyNeutralLepton_Tree.root"),
+     'Muon_2016E': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016E/HeavyNeutralLepton_Tree.root"),
+     'Muon_2016F': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016F/HeavyNeutralLepton_Tree_*.root"),
+     'Muon_2016G': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016G/HeavyNeutralLepton_Tree.root"),
+     'Muon_2016H': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016H/HeavyNeutralLepton_Tree.root"),
 
 }
 test = {
@@ -108,5 +125,5 @@ def replaceFilepath(inputjson):
 #writejson(signals,"signals.json")
 #writejson(signals,"signals_skim.json")
 #writejson(signals_muon,"signals_muon.json")
-writejson(data_muon,"data_muon.json")
+writejson(data_muon,"muon_data_Jun22.json")
 #replacejson("signals.json")

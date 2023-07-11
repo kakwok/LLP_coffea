@@ -18,15 +18,21 @@ After preparing the signal histograms with the processor, do:
 
 Then run a **coffea env**,
 ```
-python writeABCD.py --writeYields   
+python writeABCD.py --writeYields --useOOT 
+python writeABCD.py --writeYields --useOOT --muon   ## for muon channel
 ```
 
 Run the script in a separate terminal **without coffea env**, to write all the data cards
 ```
 python writeABCD.py
+python writeABCD.py --muon
 ```
-
 The separate command is done because combine is not compatible with coffea environment.
+
+For tau-HNL, you need to combine the electron/muon channel result, add the path of tau-datacards to `combTau.py`, then do:
+```
+python combTau.py  ## tau HNL only (run after making electron and muon channel data-card)
+```
 
 ## Limit scan
 
@@ -53,3 +59,13 @@ The key functions are the following:
  -  Helper functions:
     - `f_xsec(m)`, `f_ctau(m)` : returns a function for xsec/ctau given HNL mass `m` 
   
+## Run pre-App checks for datacards
+
+Use the script `runTest.py`, example command:
+```
+python runTest.py -i preAppChk_Jan18/HNL_muonType_mHNL4p0_pl1000_CSC.txt -o preAppChk_Jan18/muon_CSC --extra="--setParameters norm=1 --freezeParameter norm"
+```
+Explanation:
+ - `-i` input datacard path
+ - `-o` output test files location (best to place inside datacard folders
+ - `--extra` additional arguments to be passed to combine 

@@ -77,6 +77,7 @@ wpt_LO_WJ_normalized = wpt_LO_WJ.values()/wpt_LO_WJ.values().sum()
 
 #ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
 corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+corrections['wpt_WJ'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
 #corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
 #corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
 

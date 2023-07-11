@@ -50,8 +50,7 @@ def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,**optio
     #cluster = LPCCondorCluster(log_directory="/uscms/home/kkwok/log")
     #cluster = LPCCondorCluster()
     #cluster = LPCCondorCluster(shared_temp_directory="/tmp")
-    #cluster = LPCCondorCluster(shared_temp_directory="/tmp", memory='4GB')
-    cluster = LPCCondorCluster(shared_temp_directory='/tmp', 
+    cluster = LPCCondorCluster(shared_temp_directory="/tmp", memory='4GB',
                                  worker_extra_args=['--worker-port 10000:10070', '--nanny-port 10070:10100', '--no-dashboard'],
                                  job_script_prologue=[]) 
 
@@ -83,7 +82,7 @@ def runLPC(outf="test.pickle",fileset="test.json",isElectronChannel=True,**optio
         processor_instance=p,
         executor=processor.dask_executor,
         executor_args=exe_args,
-        #chunksize=10000,
+        chunksize=1000,
     )
 
 
@@ -123,6 +122,7 @@ if __name__ == '__main__':
     procOptions       = vars(options)
     procOptions       = {k:v for k,v in procOptions.items() if k not in ["fileset","outf","isElectronChannel"]} ## write these 3 option explicitly
 
+    print(" Coffea version = ", coffea.__version__)
     print(" Fileset = ", fileset)
     print(" isElectronChannel = ", isElectronChannel)
     print(" year              = ", options.year)

@@ -659,6 +659,9 @@ def makeAllcards(f_yield,outdir="./combine/HNL_datacards/",suffix="",test=False)
             #else:
             #    norm = 1
             #    continue
+            
+
+            #if not (("1p9" in name) or ("2p05" in name) or ("2p15" in name)): continue
             norm = 1
             sigRate = {"HNL":np.array(signal["CSC"])/norm }
             obs = bkg_rate_CSC['bkg']
@@ -903,7 +906,7 @@ if __name__ == "__main__":
         #outdir = "./combine/HNL_datacards/ele_v16/"   ###  v16, 150DT cut (Jan4 data, Apr27 signal pickles) ABCD, unblind, new systematics
         #outdir = "./combine/HNL_datacards/ele_v17/"    ###  v17, 150DT cut (Jan4 data, May4 signal pickles) ABCD, unblind, 2p5,3p0 signals
         #outdir = "./combine/HNL_datacards/ele_v18/"    ###  v18, 150DT cut (Jan4 data, May4 signal pickles)  2p5,3p0 signals, new DT systematics
-        #outdir = "./combine/HNL_datacards/ele_v19/"    ###  v19, 150DT cut (May14 data, May4 signal pickles)  2p5,3p0 signals, new DT systematics
+        outdir = "./combine/HNL_datacards/ele_v19/"    ###  v19, 150DT cut (May14 data, May4 signal pickles)  2p5,3p0 signals, new DT systematics
         cut = {"CSC":(200,2.8,None), "DT":(150,2.8,None)}
         #########################################
         #outdir = "./combine/HNL_datacards/tau_v2/ele/"   ### tau v2: 150 DT, real ABC
@@ -926,7 +929,10 @@ if __name__ == "__main__":
                 {"m_src":2.0,"m_target":2.4,"isTau":True},
                 {"m_src":2.0,"m_target":2.3,"isTau":True},
                 {"m_src":2.0,"m_target":2.2,"isTau":True},
+                {"m_src":2.0,"m_target":2.15,"isTau":True},
+                {"m_src":2.0,"m_target":2.05,"isTau":True},
                 {"m_src":2.0,"m_target":2.1,"isTau":True},
+                {"m_src":2.0,"m_target":1.9,"isTau":True},
                 {"m_src":1.5,"m_target":1.8,"isTau":True},
                 {"m_src":1.5,"m_target":1.7,"isTau":True},
                 {"m_src":1.5,"m_target":1.6,"isTau":True},
@@ -939,8 +945,10 @@ if __name__ == "__main__":
                 {"m_src":2.5,"m_target":2.6,"isTau":False},
                 {"m_src":2.5,"m_target":2.7,"isTau":False},
                 {"m_src":2.5,"m_target":2.8,"isTau":False},
+                {"m_src":2.5,"m_target":2.85,"isTau":False},#new
                 {"m_src":2.5,"m_target":2.9,"isTau":False},
                 #{"m_src":4.0,"m_target":3.0,"isTau":False},
+                {"m_src":3.0,"m_target":3.05,"isTau":False},
                 {"m_src":3.0,"m_target":3.1,"isTau":False},
                 {"m_src":3.0,"m_target":3.2,"isTau":False},
                 {"m_src":3.0,"m_target":3.3,"isTau":False},

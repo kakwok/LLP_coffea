@@ -91,6 +91,28 @@ data_muon = {
      'Muon_2016H': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleMuon_2016H/HeavyNeutralLepton_Tree.root"),
 
 }
+data_electron = {
+     'EGamma_2018A': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018A*/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2018B': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018B/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2018C': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018C/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2018D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018D/HeavyNeutralLepton_Tree.root"),
+
+     'EGamma_2017B': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017B/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2017C': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017C/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2017D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017D/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2017E': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017E/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2017F': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017F/HeavyNeutralLepton_Tree.root"),
+
+     'EGamma_2016B': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016B-v*/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2016C': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016C/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2016D': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016D/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2016E': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016E/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2016F': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016F/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2016G': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016G/HeavyNeutralLepton_Tree.root"),
+     'EGamma_2016H': glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016H/HeavyNeutralLepton_Tree.root"),
+
+
+}
 test = {
      "HNL_electronType_mHNL2p0_pl100"    :glob.glob("/eos/uscms/store/user/lpclonglived/HNL/skim/HNL_electronType_mHNL2p0_pl100/HeavyNeutralLepton_Tree_1.root"),
 }
@@ -125,5 +147,6 @@ def replaceFilepath(inputjson):
 #writejson(signals,"signals.json")
 #writejson(signals,"signals_skim.json")
 #writejson(signals_muon,"signals_muon.json")
-writejson(data_muon,"muon_data_Jun22.json")
+#writejson(data_muon,"muon_data_Jun22.json")
+writejson(data_electron,"electron_data_July19.json")
 #replacejson("signals.json")

@@ -1,0 +1,51 @@
+{
+    "EGamma_2018A": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018A/HeavyNeutralLepton_Tree.root",
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018A_part2/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2018B": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018B/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2018C": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018C/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2018D": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/EGamma_2018D/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2017B": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017B/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2017C": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017C/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2017D": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017D/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2017E": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017E/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2017F": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2017F/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2016B": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016B-v2/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2016C": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016C/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2016D": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016D/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2016E": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016E/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2016F": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016F/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2016G": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016G/HeavyNeutralLepton_Tree.root"
+    ],
+    "EGamma_2016H": [
+        "root://cmseos.fnal.gov//store/user/lpclonglived/HNL/skim_May11/merged/SingleElectron_2016H/HeavyNeutralLepton_Tree.root"
+    ]
+}

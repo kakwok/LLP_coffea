@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 import json
 import gzip
-import uproot3 as uproot
+import uproot3 as uproot3
+import  uproot
 import numexpr
 import numpy as np
 from coffea import hist, lookup_tools
 from coffea.util import load, save
 from coffea.hist import plot
 import warnings
+from coffea.lookup_tools import extractor
 
 corrections = {}
 
-with uproot.open("metadata/pileUp_Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.root") as fin_pileup:
+with uproot3.open("metadata/pileUp_Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.root") as fin_pileup:
     norm = lambda x: x / x.sum()
     #print(fin_pileup["pileup"].values)
     #print(fin_pileup["pileup"].values.sum())
@@ -57,15 +59,53 @@ corrections['2018_pileupweight'] = pileup_corr
 corrections['2018_pileupweight_puUp'] = pileup_corr_puUp
 corrections['2018_pileupweight_puDown'] = pileup_corr_puDown
 
-with uproot.open("./metadata/WPT.root") as f:
-    wpt_LO = f['Wpt']
+#with uproot.open("./metadata/WPT.root") as f:
+#    wpt_LO = f['Wpt']
+with uproot.open("./metadata/WPT_v2.root") as f:
+    wpt_LO_HNL = f['h_HNL']
+    wpt_LO_WJ  = f['h_WJ']
 with uproot.open("./metadata/wp-13tev-cms.root") as f:
     wpt_NLO = f['s_qt']
 
-wpt_NLO_normalized = wpt_NLO.values/wpt_NLO.values.sum()
+with uproot.open("./metadata/WpT_NLO_scaleVar.root") as f:
+    h_nlo_unc = f['h_nlo_unc']
 
-ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
-corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized[ptrange] /wpt_LO.values[ptrange] , wpt_LO.edges[ptrange])
+wpt_NLO_normalized = wpt_NLO.values()/wpt_NLO.values().sum()
+wpt_NLO_err        = wpt_NLO.errors()/wpt_NLO.values().sum()
+wpt_LO_HNL_normalized = wpt_LO_HNL.values()/wpt_LO_HNL.values().sum()
+wpt_LO_WJ_normalized = wpt_LO_WJ.values()/wpt_LO_WJ.values().sum()
+
+#ptrange = slice(np.searchsorted(wpt_LO.edges, 25.), np.searchsorted(wpt_LO.edges, 800.) + 1)
+corrections['wpt'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+corrections['wpt_WJ'] = lookup_tools.dense_lookup.dense_lookup( wpt_NLO_normalized /wpt_LO_WJ_normalized , wpt_LO_WJ.axes[0].edges())
+#corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized+wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+#corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( (wpt_NLO_normalized-wpt_NLO_err) /wpt_LO_HNL_normalized , wpt_LO_HNL.axes[0].edges())
+
+#### Look up DYTURBO values in each h_nlo bins
+norm_corr = wpt_NLO_normalized /wpt_LO_HNL_normalized
+corr_up = []
+corr_down = []
+
+DYTURBO_ptbin=wpt_NLO.axes[0].edges()      # 0 - 1500
+NLO_ptbin = h_nlo_unc.axes[0].edges()      # 0 - 250
+#index where NLO pt bin in DYTURBO_ptbin
+# overlaps = np.where(np.in1d(NLO_ptbin,DYTURBO_ptbin))[0][1:]
+overlaps = np.array([  5 , 10 , 15,  20,  25  ,30 , 35,  40  ,45  ,50 , 60,  70 , 80 , 90, 100 ,125, 150 ,200,300])
+
+DY_ipt=0
+for i,pt in enumerate(h_nlo_unc.axes[0].edges()[:-1]):  # n-1 bins
+    if i>=overlaps[DY_ipt]:
+        if DY_ipt<len(overlaps)-1: DY_ipt+=1
+    #print(pt, h_unc.values()[i],overlaps[DY_ipt],DYTURBO_ptbin[DY_ipt], wpt_NLO_normalized[DY_ipt])
+    corr_up.append(  norm_corr[DY_ipt]*(1+h_nlo_unc.values()[i]))
+    corr_down.append(norm_corr[DY_ipt]*(1-h_nlo_unc.values()[i]))
+corr_up = np.array(corr_up)
+corr_down = np.array(corr_down)
+
+corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( corr_up , h_nlo_unc.axes[0].edges())
+corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( corr_down , h_nlo_unc.axes[0].edges())
+
+
 
 def read_xsections(filename):
     out = {}
@@ -73,7 +113,7 @@ def read_xsections(filename):
         for line in fin:
             line = line.strip()
             if len(line) == 0 or line[0] == '#':
-                continue
+                continue 
             dataset, xsexpr, *_ = line.split()
             try:
                 xs = float(numexpr.evaluate(xsexpr))
@@ -88,6 +128,106 @@ def read_xsections(filename):
 # curl -O https://raw.githubusercontent.com/kakwok/ZPrimePlusJet/newTF/analysis/ggH/xSections.dat
 corrections['xsections'] = read_xsections("metadata/xSections.dat")
 
+basedir="metadata/muonefficiencies/Run2/preUL/"
+ext = extractor()
+# From https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2018
+# From https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2017
+# From https://twiki.cern.ch/twiki/bin/view/CMS/MuonLegacy2016
+# ID
+local_names = ['muon_ID_2018_value',
+               'muon_ID_2017_value',
+               'muon_ID_2016_20fb_value',
+               'muon_ID_2016_16fb_value']
+hist_names =  ['NUM_TightID_DEN_TrackerMuons_pt_abseta',
+               'NUM_TightID_DEN_genTracks_pt_abseta'   ,
+               'NUM_TightID_DEN_genTracks_eta_pt'      ,
+               'NUM_TightID_DEN_genTracks_eta_pt'      ]
+file_names = [f'{basedir}/2018/2018_Z/RunABCD_SF_ID.root',
+              f'{basedir}/2017/2017_Z/RunBCDEF_SF_ID_syst.root',
+              f'{basedir}/2016/2016_Z/RunBCDEF_SF_ID.root',
+              f'{basedir}/2016/2016_Z/RunGH_SF_ID.root' ]
+def add_weights(ext,local_names,hist_names,file_names):
+    for local_name,hist_name,file_name in zip(local_names,hist_names,file_names):
+        weight_key = f'{local_name} {hist_name} {file_name}'
+        ext.add_weight_sets([weight_key])
+        err_name = local_name.replace("_value","_error")
+        weight_key = f'{err_name} {hist_name}_error {file_name}' # errors 
+        ext.add_weight_sets([weight_key])
+    return
+add_weights(ext,local_names,hist_names,file_names)
+# ISO
+local_names = ['muon_ISO_2018_value',
+               'muon_ISO_2017_value',
+               'muon_ISO_2016_20fb_value',
+               'muon_ISO_2016_16fb_value']
+hist_names =  ['NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta',
+               'NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta'   ,
+               'NUM_TightRelIso_DEN_TightIDandIPCut_eta_pt'      ,
+               'NUM_TightRelIso_DEN_TightIDandIPCut_eta_pt'      ]
+file_names = [f'{basedir}/2018/2018_Z/RunABCD_SF_ISO.root',
+              f'{basedir}/2017/2017_Z/RunBCDEF_SF_ISO_syst.root',
+              f'{basedir}/2016/2016_Z/RunBCDEF_SF_ISO.root',
+              f'{basedir}/2016/2016_Z/RunGH_SF_ISO.root' ]
+add_weights(ext,local_names,hist_names,file_names)
+# trigger  
+local_names = ['muon_trigger_2018_9fb_value',
+               'muon_trigger_2018_50fb_value',
+               'muon_trigger_2018_wrong_value',
+               'muon_trigger_2017_value',
+               'muon_trigger_2016_20fb_value',
+               'muon_trigger_2016_16fb_value']
+hist_names =  ['IsoMu24_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_PtEtaBins/efficienciesDATA/abseta_pt_DATA',
+                'IsoMu27_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_OR_IsoTkMu24_PtEtaBins/abseta_pt_ratio',
+                'IsoMu24_OR_IsoTkMu24_PtEtaBins/abseta_pt_ratio']
+file_names = [
+              f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root',
+              f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_AfterMuonHLTUpdate.root',
+              f'{basedir}/2018/2018_trigger/EfficienciesAndSF_2018Data_BeforeMuonHLTUpdate.root',
+              f'{basedir}/2017/2017_trigger/EfficienciesAndSF_RunBtoF_Nov17Nov2017.root',
+              f'{basedir}/2016/2016_trigger/EfficienciesAndSF_RunBtoF.root',
+              f'{basedir}/2016/2016_trigger/EfficienciesAndSF_RunGtoH.root' ]
+add_weights(ext,local_names,hist_names,file_names)
 
+ext.finalize()
+lepsf_evaluator = ext.make_evaluator()
+lepsf_keys = lepsf_evaluator.keys()
+
+corrections['muonsf_evaluator'] = lepsf_evaluator
+corrections['muonsf_keys'] = lepsf_keys
+print("muon SFs:",lepsf_keys)
+ele_reco_SF_2018="metadata/electron/egammaEffi.root"  ## this is reco SF
+ele_ID_SF_2018="metadata/electron/2018_ElectronTight.root"
+ele_ID_SF_2017="metadata/electron/2017_ElectronTight.root"
+ele_ID_SF_2016="metadata/electron/2016LegacyReReco_ElectronTight_Fall17V2.root"
+ele_sf="metadata/electron/ele_trigSF.root"
+ext = extractor()
+ext.add_weight_sets([f'electron_ID_SF_2018_value EGamma_SF2D {ele_ID_SF_2018}'])
+ext.add_weight_sets([f'electron_ID_SF_2018_error EGamma_SF2D_error {ele_ID_SF_2018}'])
+
+ext.add_weight_sets([f'electron_ID_SF_2017_value EGamma_SF2D {ele_ID_SF_2017}'])
+ext.add_weight_sets([f'electron_ID_SF_2017_error EGamma_SF2D_error {ele_ID_SF_2017}'])
+
+ext.add_weight_sets([f'electron_ID_SF_2016_value EGamma_SF2D {ele_ID_SF_2016}'])
+ext.add_weight_sets([f'electron_ID_SF_2016_error EGamma_SF2D_error {ele_ID_SF_2016}'])
+
+ext.add_weight_sets([f'electron_trigger_SF_2018_value h_ele32_wptTight_2018 {ele_sf}'])
+ext.add_weight_sets([f'electron_trigger_SF_2018_error h_ele32_wptTight_2018_err {ele_sf}'])
+
+ext.add_weight_sets([f'electron_trigger_SF_2017_value h_ele32_wptTight_2017 {ele_sf}'])
+ext.add_weight_sets([f'electron_trigger_SF_2017_error h_ele32_wptTight_2017_err {ele_sf}'])
+
+ext.add_weight_sets([f'electron_trigger_SF_2016_value h_ele27_wptTight_2016 {ele_sf}'])
+ext.add_weight_sets([f'electron_trigger_SF_2016_error h_ele27_wptTight_2016_err {ele_sf}'])
+
+ext.finalize()
+lepsf_evaluator = ext.make_evaluator()
+lepsf_keys = lepsf_evaluator.keys()
+
+corrections['elesf_evaluator'] = lepsf_evaluator
+corrections['elesf_keys'] = lepsf_keys
+print("electron SFs:",lepsf_keys)
 
 save(corrections, 'corrections.coffea')

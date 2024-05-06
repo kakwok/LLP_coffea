@@ -70,6 +70,12 @@ with uproot.open("./metadata/wp-13tev-cms.root") as f:
 with uproot.open("./metadata/WpT_NLO_scaleVar.root") as f:
     h_nlo_unc = f['h_nlo_unc']
 
+with uproot.open("./metadata/WpT_PSvar.root") as f:
+    h_FSR_up_unc = f['h_FSR up']
+    h_FSR_down_unc = f['h_FSR down']
+    h_ISR_up_unc = f['h_ISR up']
+    h_ISR_down_unc = f['h_ISR down']
+
 wpt_NLO_normalized = wpt_NLO.values()/wpt_NLO.values().sum()
 wpt_NLO_err        = wpt_NLO.errors()/wpt_NLO.values().sum()
 wpt_LO_HNL_normalized = wpt_LO_HNL.values()/wpt_LO_HNL.values().sum()
@@ -104,6 +110,12 @@ corr_down = np.array(corr_down)
 
 corrections['wptUp'  ] = lookup_tools.dense_lookup.dense_lookup( corr_up , h_nlo_unc.axes[0].edges())
 corrections['wptDown'] = lookup_tools.dense_lookup.dense_lookup( corr_down , h_nlo_unc.axes[0].edges())
+
+#only correct up to 300 GeV
+corrections['wFSRUp'] = lookup_tools.dense_lookup.dense_lookup(  h_FSR_up_unc.values()*norm_corr[:-2] , h_FSR_up_unc.axes[0].edges())
+corrections['wFSRDown'] = lookup_tools.dense_lookup.dense_lookup(h_FSR_down_unc.values()*norm_corr[:-2] , h_FSR_up_unc.axes[0].edges())
+corrections['wISRUp'] = lookup_tools.dense_lookup.dense_lookup(  h_ISR_up_unc.values()*norm_corr[:-2] , h_FSR_up_unc.axes[0].edges())
+corrections['wISRDown'] = lookup_tools.dense_lookup.dense_lookup(h_ISR_down_unc.values()*norm_corr[:-2] , h_FSR_up_unc.axes[0].edges())
 
 
 

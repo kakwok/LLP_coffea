@@ -38,6 +38,12 @@ def add_Wpt_kfactor(weights, gWPt, dataset):
         weights.add("Wpt", compiled["wpt"](gWPt)
                             , compiled["wptUp"](gWPt)
                             , compiled["wptDown"](gWPt))
+        weights.add("WptFSR", compiled["wpt"](gWPt)
+                            , compiled["wFSRUp"](gWPt)
+                            , compiled["wFSRDown"](gWPt))
+        weights.add("WptISR", compiled["wpt"](gWPt)
+                            , compiled["wISRUp"](gWPt)
+                            , compiled["wISRDown"](gWPt))
     elif dataset=="WJetsToLNu" or  "WJets" in dataset:
         weights.add("Wpt"    , compiled["wpt_WJ"](gWPt))
     return

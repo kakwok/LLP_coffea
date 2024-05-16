@@ -19,6 +19,11 @@ def f_v2(m):
         return f_xsec(m)(x)*4.8759E-05 ## const. between xsec and v^2
     return ctau_m
 
+def f_ctau(m):
+    def ff(v):
+        return f_v2(m)(1000)*1000/v
+    return ff
+
 ## function for tau
 def f_1m_tau(x):
     x0 = np.array([1,2,4,7,10])

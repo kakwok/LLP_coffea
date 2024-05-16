@@ -71,8 +71,12 @@ def printLumi(samples,treename="MuonSystem"):
         lumivalues = lumi_tools.LumiData("metadata/lumi2017.csv.gz")
     elif np.all([("2018" in k) for k in samples.keys()]):
         lumivalues = lumi_tools.LumiData("metadata/lumi2018.csv")
+    elif np.all([("2022" in k) for k in samples.keys()]):
+        lumivalues = lumi_tools.LumiData("metadata/lumi2022.csv")
+    elif np.all([("2023" in k) for k in samples.keys()]):
+        lumivalues = lumi_tools.LumiData("metadata/lumi2023.csv")
     else:
-        print(samples.keys()," must contain 2016,2017 or 2018")
+        print(samples.keys()," must contain 2016,2017,2018,2022 or 2023")
         return
     runs  = lumivalues._lumidata[:, 0].astype('u4')
     lumis = lumivalues._lumidata[:, 1].astype('u4')
@@ -102,7 +106,7 @@ def printLumi(samples,treename="MuonSystem"):
                         dataset_lumi[dataset] = accumulator
                         dataset_badFiles[dataset] = badfiles
                     processed += 1
-                    if processed % 10 == 0:
+                    if processed % 100 == 0:
                         print("Processing: done with % 4d / % 4d files" % (processed, total))
                 futures -= finished
             del finished
@@ -243,9 +247,9 @@ if __name__ == '__main__':
     }
     #printLumi(getSamplesFromList(SingleElectron2016),Treename)
     #printLumi(getSamplesFromList(SingleElectron_2017),Treename)
-    printLumi(getSamplesFromList(EGamma_2018),Treename)
+    #printLumi(getSamplesFromList(EGamma_2018),Treename)
 
-    print("Lumi for single muon")
+    #print("Lumi for single muon")
     SingleMuon_2016={
         "SingleMuon_2016B-v1":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p17/Data2016_AOD/v5/sixie/SingleMuon/Run2_displacedJetMuonNtupler_V1p17_Data2016_AOD_Run2016B-07Aug17_ver1.txt",
         "SingleMuon_2016B-v2":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p17/Data2016_AOD/v5/sixie/SingleMuon/Run2_displacedJetMuonNtupler_V1p17_Data2016_AOD_Run2016B-07Aug17_ver2.txt",
@@ -269,10 +273,26 @@ if __name__ == '__main__':
         "SingleMuon_2018C":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p17/Data2018ABC_AOD/v5/sixie/SingleMuon/Run2_displacedJetMuonNtupler_V1p17_Data2018_17Sept2018_AOD_Run2018C-17Sep2018.txt",
         "SingleMuon_2018D":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p17/Data2018D_AOD/v5/sixie/SingleMuon/Run2_displacedJetMuonNtupler_V1p17_Data2018D_17Sept2018_AOD_Run2018D-PromptReco.txt",
     }
-    printLumi(getSamplesFromList(SingleMuon_2016),Treename)
-    printLumi(getSamplesFromList(SingleMuon_2017),Treename)
-    printLumi(getSamplesFromList(SingleMuon_2018),Treename)
+    #printLumi(getSamplesFromList(SingleMuon_2016),Treename)
+    #printLumi(getSamplesFromList(SingleMuon_2017),Treename)
+    #printLumi(getSamplesFromList(SingleMuon_2018),Treename)
+    print("Lumi for 2022 data")
+    Muon_2022={
+        "Muon_2022E":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2022/Muon_Run2022E-PromptReco-v1.txt",
+        "Muon_2022F":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2022/Muon_Run2022F-PromptReco-v1.txt",
+        "Muon_2022G":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2022/Muon_Run2022G-PromptReco-v1.txt",
+    }
 
+    Muon_2023={
+        "Muon0_2023B":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2023/MuonHitsOnly/Muon0_Run2023B-RAW-v1.txt",
+        "Muon0_2023C":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2023/MuonHitsOnly/Muon0_Run2023C-RAW-v1.txt",
+        "Muon0_2023D":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2023/MuonHitsOnly/Muon0_Run2023D-RAW-v1.txt",
+        "Muon1_2023B":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2023/MuonHitsOnly/Muon1_Run2023B-RAW-v1.txt",
+        "Muon1_2023C":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2023/MuonHitsOnly/Muon1_Run2023C-RAW-v1.txt",
+        "Muon1_2023D":"../llp_analyzer/lists/displacedJetMuonNtuple/V1p19/Data2023/MuonHitsOnly/Muon1_Run2023D-RAW-v1.txt",
+    }
+    #printLumi(getSamplesFromList(Muon_2022),Treename)
+    printLumi(getSamplesFromList(Muon_2023),Treename)
   
 
 # lists/displacedJetMuonNtuple/V1p17/Data2016/MuonHitsOnly/SingleElectron_2016B-v1.txt |  390 ++++++++++
